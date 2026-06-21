@@ -42,9 +42,10 @@ By signing the CLA, you:
 
 ### Prerequisites
 
-- Python 3.10 or higher
 - Node.js 18 or higher
-- Docker and Docker Compose
+- pnpm 8 or higher
+- Rust toolchain (for proxy service and analytics package)
+- Devbox (for consistent development environments)
 - Git
 
 ### Getting Started
@@ -58,39 +59,38 @@ By signing the CLA, you:
 
 2. **Set Up Development Environment**
    ```bash
-   # Install Python dependencies
-   pip install -r requirements.txt
-   pip install -r requirements-dev.txt
+   # Install dependencies using devbox
+   devbox run -- pnpm install
 
-   # Install Node dependencies
-   cd frontend
-   npm install
-   cd ..
-
-   # Start development services
-   docker-compose up -d redis postgres
+   # Install Rust toolchain if not already installed
+   rustup install stable
    ```
 
 3. **Run Development Servers**
    ```bash
-   # Backend API
-   python -m api.main
+   # All services (proxy + web)
+   devbox run -- nx run-many -t dev
 
-   # Frontend (in another terminal)
-   cd frontend
-   npm run dev
+   # Or individually:
+   # Proxy service (Rust)
+   cd apps/proxy
+   devbox run -- cargo run
+
+   # Web application (Next.js)
+   cd apps/web
+   devbox run -- nx dev web
    ```
 
 ## Code Style and Standards
 
-### Python Code
-- Follow PEP 8 style guidelines
-- Use `black` for code formatting
-- Use `flake8` for linting
-- Use `mypy` for type checking
-- Write docstrings for all public functions and classes
+### Rust Code
+- Follow Rust style guidelines (rustfmt)
+- Use `cargo fmt` for code formatting
+- Use `cargo clippy` for linting
+- Use `cargo check` for type checking
+- Write documentation comments for all public functions and modules
 
-### JavaScript/TypeScript Code
+### TypeScript/Next.js Code
 - Follow ESLint rules
 - Use Prettier for code formatting
 - Use TypeScript for type safety
@@ -124,18 +124,20 @@ Closes #123
 ### Running Tests
 
 ```bash
-# Python tests
-pytest tests/
+# All tests
+devbox run -- nx run-many -t test
 
-# JavaScript tests
-cd frontend
-npm test
+# Rust tests (proxy service)
+cd apps/proxy
+devbox run -- cargo test
 
-# Integration tests
-pytest tests/integration/
+# TypeScript tests (web application)
+cd apps/web
+devbox run -- nx test web
 
-# Coverage report
-pytest --cov=src tests/
+# Analytics package tests
+cd packages/analytics-rs
+devbox run -- cargo test
 ```
 
 ### Test Requirements
@@ -181,43 +183,45 @@ pytest --cov=src tests/
 
 ```
 ai-dashboard/
-├── api/                 # Backend API
-│   ├── collectors/     # Data collectors
-│   ├── processors/     # Analytics processors
-│   ├── models/         # Data models
-│   └── main.py         # API entry point
-├── frontend/           # Frontend dashboard
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   └── utils/
-│   └── package.json
-├── collectors/         # Standalone collectors
-│   ├── python/
-│   ├── go/
-│   └── javascript/
-├── tests/              # Test files
-├── docs/              # Documentation
-├── scripts/           # Utility scripts
-└── docker-compose.yml # Development services
+├── apps/
+│   ├── proxy/          # Rust-based proxy service
+│   │   ├── src/        # Source code
+│   │   ├── tests/      # Tests
+│   │   ├── Cargo.toml  # Rust dependencies
+│   │   ├── justfile    # Just command runner
+│   │   └── devbox.json # Devbox configuration
+│   └── web/            # Next.js web application
+│       ├── src/        # Source code
+│       ├── public/     # Static assets
+│       └── package.json
+├── packages/
+│   ├── analytics-rs/   # Rust analytics package
+│   │   ├── src/        # Source code
+│   │   └── Cargo.toml
+│   └── ui/             # UI components package
+├── docs/               # Public documentation
+├── internal-docs/      # Internal documentation and PRDs
+├── devbox.json         # Root devbox configuration
+├── nx.json             # Nx workspace configuration
+└── package.json        # Root package.json
 ```
 
 ## Feature Development
 
 ### Adding New Collectors
 
-1. Create collector in appropriate language directory
-2. Implement standard collector interface
-3. Add tests
-4. Update documentation
+1. Create collector in the proxy service (apps/proxy/src/collectors/)
+2. Implement standard collector interface in Rust
+3. Add tests in apps/proxy/tests/
+4. Update documentation in docs/
 5. Submit PR
 
 ### Adding New Analytics Features
 
-1. Update data model if needed
-2. Implement processing logic
-3. Add dashboard visualizations
-4. Write tests
+1. Update data model in packages/analytics-rs/ if needed
+2. Implement processing logic in Rust
+3. Add dashboard visualizations in apps/web/
+4. Write tests for both Rust and TypeScript components
 5. Update documentation
 
 ### Architecture Considerations
@@ -227,6 +231,7 @@ When adding features, consider:
 - Design for future multi-tenant capabilities when appropriate
 - Keep commercial feature requirements in mind for future licensing
 - Document any design decisions that affect future commercial features
+- Use devbox for all command execution to ensure consistency
 
 ## Documentation
 

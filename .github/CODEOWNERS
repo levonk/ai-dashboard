@@ -1,0 +1,35 @@
+# Code Owners File
+
+# This file defines individuals or teams that are responsible for code in this
+# repository. For more information, see:
+# https://help.github.com/articles/about-codeowners/
+
+# Global owners - will be requested for review on all PRs
+* @levonk
+
+# App-specific owners
+apps/proxy/ @levonk
+apps/web/ @levonk
+
+# Package-specific owners
+packages/analytics-rs/ @levonk
+packages/ui/ @levonk
+
+# Configuration files
+*.json @levonk
+*.toml @levonk
+*.yaml @levonk
+*.yml @levonk
+devbox.json @levonk
+nx.json @levonk
+
+# Documentation
+docs/ @levonk
+*.md @levonk
+
+# GitHub workflows
+.github/ @levonk
+
+# License and legal
+LICENSE* @levonk
+CLA* @levonk

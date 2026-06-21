@@ -1,0 +1,25 @@
+# CLA Assistant Configuration
+version: 1
+remoteOrganization: levonk
+remoteRepository: ai-dashboard
+remotePullRequestTitle: CLA Assistant
+remotePullRequestBody: |
+  This PR was automatically created by CLA Assistant to manage the Contributor License Agreement process.
+  
+  ## What is this?
+  This PR sets up the CLA (Contributor License Agreement) process for the AI Dashboard project.
+  
+  ## Why do we need this?
+  The AI Dashboard uses a dual licensing model (AGPL-3.0 and Commercial). The CLA ensures that:
+  - The project can offer both AGPL-3.0 and commercial licenses
+  - Your contributions can be used in both the open-source and commercial versions
+  - The project maintainers have the necessary rights to manage the dual licensing
+  
+  ## What do I need to do?
+  Simply comment on this PR with your agreement:
+  - Comment "I agree" to accept the CLA
+  - The CLA bot will then verify your agreement
+  
+  ## Questions?
+  See [CONTRIBUTING.md](../../CONTRIBUTING.md) for more details about the CLA process.
+emptyCommitLabel: 'cla: initialize CLA assistant'

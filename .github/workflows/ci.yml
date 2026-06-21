@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: devbox-install-action@v1
+        with:
+          devbox-version: latest
+      - name: Run linting
+        run: devbox run -- nx run-many -t lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: devbox-install-action@v1
+        with:
+          devbox-version: latest
+      - name: Run type checking
+        run: devbox run -- nx run-many -t typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: devbox-install-action@v1
+        with:
+          devbox-version: latest
+      - name: Run tests
+        run: devbox run -- nx run-many -t test
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: devbox-install-action@v1
+        with:
+          devbox-version: latest
+      - name: Build all projects
+        run: devbox run -- nx run-many -t build

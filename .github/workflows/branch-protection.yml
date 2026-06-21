@@ -1,0 +1,48 @@
+# Branch Protection Configuration
+
+This file documents the recommended branch protection rules for the AI Dashboard repository.
+
+## Main Branch Protection
+
+### Required Status Checks
+- CI (lint, typecheck, test, build)
+- CLA Assistant (for contributor license agreement)
+
+### Branch Restrictions
+- Require pull request reviews before merging
+- Dismiss stale PR approvals when new commits are pushed
+- Require review from Code Owner
+- Limit who can push to matching branches: Maintainers only
+
+### Other Rules
+- Do not allow bypassing the above settings
+- Require branches to be up to date before merging
+- Require conversation resolution before merging
+
+## Dev Branch Protection
+
+### Required Status Checks
+- CI (lint, typecheck, test, build)
+
+### Branch Restrictions
+- Limit who can push to matching branches: Maintainers and Contributors
+
+### Other Rules
+- Do not allow bypassing the above settings
+- Require branches to be up to date before merging
+
+## Feature Branch Naming Convention
+
+All feature branches should follow the pattern:
+- `feature/current/prd-ai-analytics/story-[PP]-[III]-[STORY-NAME-KEBAB-CASE]`
+- `feature/[feature-name]`
+- `fix/[bug-description]`
+- `hotfix/[critical-bug]`
+
+## Implementation
+
+To implement these rules:
+1. Go to repository Settings → Branches
+2. Add branch protection rules for `main` and `dev`
+3. Configure the settings as documented above
+4. Set up CODEOWNERS file for review requirements
