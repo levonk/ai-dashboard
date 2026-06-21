@@ -1,0 +1,14 @@
+{
+  "packages": [
+    "nodejs",
+    "pnpm",
+    "nx",
+    "typescript-language-server"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo '🔧 Welcome to AI Dashboard development shell!'",
+      "echo '📁 Project location: $(pwd)'"
+    ]
+  }
+}

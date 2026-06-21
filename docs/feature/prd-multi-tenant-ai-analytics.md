@@ -2,13 +2,14 @@
 # Product Requirements Document (PRD)
 
 ## Introduction / Overview
-- **Feature name:** Multi-Tenant AI Analytics Dashboard System
-- **Summary:** A comprehensive, white-label analytics platform for AI usage across multiple dimensions: company clients, AI clients (Claude Code, Codex, Pi, Devin, etc.), teams, pipeline stages, AI model suppliers (Anthropic, OpenAI, Google, Microsoft, AWS, OpenRouter, etc.), models, and input types (text/chat, image, audio, etc.).
+- **Feature name:** AI Analytics Dashboard System
+- **Summary:** A comprehensive analytics platform for AI usage across multiple dimensions: company clients, AI clients (Claude Code, Codex, Pi, Devin, etc.), teams, pipeline stages, AI model suppliers (Anthropic, OpenAI, Google, Microsoft, AWS, OpenRouter, etc.), models, and input types (text/chat, image, audio, etc.).
 - **Context:**
   - This feature is for organizations and AI platform providers who need deep visibility into AI usage patterns across their entire AI infrastructure.
   - Addresses the lack of comprehensive analytics that can handle the complexity of modern AI stacks with multiple clients, providers, models, and transformation stages.
   - Supports dual licensing model: AGPL 3.0 for open-source users, commercial license for enterprise features and multi-tenancy.
-  - Designed to scale from single-tenant deployments to platform-scale multi-tenant architectures.
+  - Open-source version uses 2-service architecture (proxy + web) designed for single-tenant deployments.
+  - Commercial version will use 4-service architecture (proxy + collector + analytics + web) for multi-tenant scale.
 
 ## Goals
 - Provide comprehensive analytics across all AI usage dimensions (clients, teams, providers, models, pipeline stages, input types)
@@ -104,14 +105,27 @@
 
 ## Non-Functional Requirements
 
-### Performance
+### Performance (Open-Source)
+- **Ingestion Latency**: <200ms from request to analytics availability
+- **Query Performance**: <5 seconds for standard dashboard queries
+- **Concurrent Users**: Support 10+ concurrent dashboard users
+- **Throughput**: Support 100+ requests/second
+- **Data Freshness**: Near real-time data with <30 second latency
+
+### Performance (Commercial - Future)
 - **Ingestion Latency**: <100ms from request to analytics availability
 - **Query Performance**: <2 seconds for standard dashboard queries
-- **Concurrent Users**: Support 1000+ concurrent dashboard users (commercial)
-- **Throughput**: Support 10,000+ requests/second per tenant (commercial)
+- **Concurrent Users**: Support 1000+ concurrent dashboard users
+- **Throughput**: Support 10,000+ requests/second per tenant
 - **Data Freshness**: Real-time data with <5 second latency
 
-### Scalability
+### Scalability (Open-Source)
+- **Vertical Scaling**: Components designed for vertical scaling
+- **Database Performance**: Optimized queries and indexing for single-tenant workload
+- **Cache Strategy**: Optional Redis for dashboard query performance
+- **Resource Management**: Configurable resource limits and monitoring
+
+### Scalability (Commercial - Future)
 - **Horizontal Scaling**: All components must support horizontal scaling
 - **Database Scaling**: Support read replicas and connection pooling
 - **Queue Scaling**: Support Redis clustering for higher throughput
@@ -148,16 +162,35 @@
 
 ## Technical Considerations
 
-### Architecture Components
-- **Collectors**: Lightweight, language-agnostic collectors for different pipeline stages
-- **Message Queue**: Redis (open-source), Kafka/RabbitMQ (commercial) for message buffering
-- **Stream Processing**: Apache Flink or similar for real-time analytics
-- **Batch Processing**: Scheduled jobs using Airflow or similar
-- **Storage**: PostgreSQL (open-source), distributed SQL (commercial) for analytics data
-- **Time-Series DB**: TimescaleDB or InfluxDB for time-series metrics
-- **Cache**: Redis for dashboard query caching
-- **API Gateway**: Kong or similar for API management
-- **Frontend**: React/Vue.js with component library for dashboard
+### Architecture Components (Open-Source)
+- **Proxy Service**: Rust-based proxy that routes AI requests and collects telemetry data
+  - Default mode: "analytics mode" - writes telemetry directly to database
+  - Alternative mode: "emitter mode" - sends telemetry to downstream collector (commercial)
+  - Routes requests to AI providers (Anthropic, OpenAI, Google, etc.)
+  - Handles API key security and request/response processing
+  - Uses shared analytics-rs package for on-demand processing
+- **Analytics Package**: Rust library (`packages/analytics-rs`) with reusable analytics processing logic
+  - Aggregation functions (count, sum, average, percentiles)
+  - Cost calculation engine with provider-specific pricing
+  - Multi-dimensional filtering and time-series analysis
+  - Can be consumed by proxy, analytics service, or Spark jobs
+- **Web Service**: Next.js TypeScript dashboard for visualization and analytics
+  - On-demand analytics queries against database
+  - Real-time dashboard updates via polling
+  - Multi-dimensional filtering and drill-down capabilities
+- **Database**: PostgreSQL for analytics data storage
+  - Request/response events with dimensional attributes
+  - User accounts and basic authentication
+  - Alert rules and notification history
+- **Cache**: Optional Redis for dashboard query performance
+
+### Architecture Components (Commercial - Future)
+- **Proxy Service**: Operates in "emitter mode" for high-scale deployments
+- **Analytics Service**: Consumes analytics-rs package for real-time aggregation and ML capabilities
+- **Apache Spark Jobs**: Consumes analytics-rs package for batch processing and deep analytics
+- **Web Service**: Enhanced dashboard with real-time streaming and advanced features
+- **Message Queue**: Redis or Kafka for high-throughput processing
+- **Time-Series DB**: TimescaleDB for optimized time-series analytics
 
 ### Data Model
 - **Tenants**: Tenant configuration, settings, quotas
@@ -176,14 +209,25 @@
 - **Monitoring**: Prometheus, Grafana, DataDog integration
 - **Billing**: Integration with billing systems for commercial customers
 
-### Technology Stack
-- **Backend**: Python 3.10+ (collectors and API)
-- **Frontend**: React with TypeScript, modern component library
-- **Databases**: PostgreSQL, TimescaleDB for time-series data, Redis for caching
-- **Message Queue**: Redis for message buffering
+### Technology Stack (Open-Source)
+- **Proxy Backend**: Rust with axum web framework, tokio async runtime
+- **Analytics Library**: Rust package (`analytics-rs`) with reusable processing logic
+- **Web Frontend**: Next.js with TypeScript, modern component library
+- **Databases**: PostgreSQL for analytics data storage
+- **Cache**: Optional Redis for dashboard query performance
 - **Infrastructure**: Docker and Docker Compose for deployment
 - **Monitoring**: Prometheus metrics export, health check endpoints
 - **CI/CD**: GitHub Actions for CI/CD
+
+### Technology Stack (Commercial - Future)
+- **Proxy Backend**: Rust with emitter mode for high-scale deployments
+- **Analytics Library**: Same `analytics-rs` package consumed by multiple services
+- **Analytics Service**: Rust service consuming analytics-rs for real-time processing
+- **Apache Spark**: Spark jobs consuming analytics-rs for batch processing
+- **Web Frontend**: Enhanced Next.js with real-time streaming
+- **Databases**: PostgreSQL, TimescaleDB for time-series data, Redis for caching
+- **Message Queue**: Redis or Kafka for high-throughput processing
+- **ML Framework**: Integration with ML libraries for anomaly detection
 
 ### Licensing Strategy
 - **Open Source (AGPL 3.0)**:
@@ -202,7 +246,7 @@
 
 ## Success Metrics
 - **Adoption**: 100+ open-source installations in first year, 500+ by year 2
-- **Performance**: <100ms ingestion latency, <2s query performance consistently
+- **Performance**: <200ms ingestion latency, <5s query performance consistently (open-source)
 - **Reliability**: 99.5% uptime target for self-hosted deployments
 - **Community**: 200+ GitHub stars in first year, active contributor community
 - **Documentation**: Comprehensive documentation with clear setup guides
@@ -228,13 +272,13 @@
 ### Phase 1: Foundation (Weeks 1-4)
 - Set up project structure and licensing framework
 - Implement AGPL 3.0 licensing and contributor agreement
-- Create basic collector framework
-- Implement single-tenant data model
-- Build basic dashboard with core visualizations
+- Create proxy service with analytics mode (default)
+- Implement single-tenant data model in PostgreSQL
+- Build basic Next.js dashboard with core visualizations
 - Set up CI/CD pipeline
 
 ### Phase 2: Multi-Dimensional Analytics (Weeks 5-8)
-- Implement multi-dimensional data collection
+- Implement multi-dimensional data collection in proxy
 - Add support for major AI clients (Claude Code, Codex, Cursor)
 - Create pipeline stage analytics
 - Implement comparative analysis features
@@ -242,8 +286,8 @@
 - Support major AI providers (Anthropic, OpenAI, Google)
 
 ### Phase 3: Advanced Features (Weeks 9-12)
-- Implement real-time analytics and streaming
-- Add alerting and notification system
+- Implement on-demand analytics queries in web service
+- Add basic alerting and notification system
 - Create custom dashboard builder
 - Implement advanced cost analysis
 - Add data export and reporting capabilities
@@ -268,8 +312,8 @@
 ### Phase 6: Future Commercial Planning (Weeks 21-24)
 - Gather user feedback and usage patterns
 - Identify most requested commercial features
-- Plan multi-tenant architecture implementation
-- Design commercial feature set
+- Plan proxy emitter mode implementation
+- Design collector and analytics service architecture
 - Prepare commercial licensing framework
 - Document business requirements for commercial version
 

@@ -1,0 +1,56 @@
+{
+  "name": "ai-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Analytics Dashboard - Single-tenant open-source analytics system for AI usage tracking",
+  "scripts": {
+    "build": "nx run-many -t build",
+    "dev": "nx run-many -t dev",
+    "lint": "nx run-many -t lint",
+    "lint:fix": "nx run-many -t lint:fix",
+    "clean": "nx run-many -t clean",
+    "clean:hard": "nx run-many -t clean:hard",
+    "typecheck": "nx run-many -t typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\" && nx run-many -t format",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\" && nx run-many -t format:check",
+    "serve": "nx run-many -t serve",
+    "serve:proxy": "nx serve proxy",
+    "serve:web": "nx serve web",
+    "prepare": "husky install",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "nx run-many -t build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.1",
+    "@nx/eslint": "^19.0.0",
+    "@nx/js": "^19.0.0",
+    "@nx/next": "^19.0.0",
+    "@nx/vite": "^19.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.2",
+    "nx": "^19.0.0",
+    "prettier": "^3.2.5",
+    "turbo": "^1.13.3",
+    "typescript": "^5.6.3"
+  },
+  "packageManager": "pnpm@8.15.6",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
+  }
+}

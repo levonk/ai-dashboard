@@ -1,21 +1,21 @@
 ---
 story_id: "03-001"
-story_title: "Real-time Aggregation System"
-story_name: "realtime-aggregation"
+story_title: "On-Demand Analytics Queries"
+story_name: "analytics-queries"
 prd_name: "prd-multi-tenant-ai-analytics"
 prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 3
 parallel_id: 1
-branch: "feature/current/prd-multi-tenant-ai-analytics/story-03-001-realtime-aggregation"
+branch: "feature/current/prd-ai-analytics/story-03-001-analytics-queries"
 status: "todo"
 assignee: ""
 reviewer: ""
 dependencies: ["02-001", "02-002", "02-003"]
 parallel_safe: true
-modules: ["analytics", "streaming"]
+modules: ["web", "analytics"]
 priority: "MUST"
 risk_level: "high"
-tags: ["feat", "analytics", "streaming"]
+tags: ["feat", "analytics", "queries"]
 due: "2025-03-31"
 created_at: "2025-06-20"
 updated_at: "2025-06-20"
@@ -23,11 +23,30 @@ updated_at: "2025-06-20"
 
 ## Summary
 
-Implement real-time stream processing for analytics aggregation to support live dashboards and alerts. This system processes incoming analytics events with <5 second latency and provides aggregated metrics for real-time visualization.
+Implement on-demand analytics query system in the web service to support dashboard visualization and data exploration. This system executes SQL queries against the PostgreSQL database to generate aggregated metrics, trends, and comparisons on-demand for dashboard display.
 
 ## Sub-Tasks
 
-- [ ] Design stream processing architecture — target: src/analytics/streaming/architecture.ts
+- [ ] Design query API and response schemas — target: apps/web/src/app/api/analytics/query/route.ts
+- [ ] Implement multi-dimensional filtering queries — target: apps/web/src/lib/analytics/filters.ts
+- [ ] Add time-series aggregation queries — target: apps/web/src/lib/analytics/timeseries.ts
+- [ ] Create comparative analysis queries (providers, models, clients) — target: apps/web/src/lib/analytics/comparison.ts
+- [ ] Implement cost calculation queries — target: apps/web/src/lib/analytics/costs.ts
+- [ ] Add query optimization and caching — target: apps/web/src/lib/analytics/cache.ts
+- [ ] Create query validation and sanitization — target: apps/web/src/lib/analytics/validation.ts
+- [ ] Add query tests and performance benchmarks — target: apps/web/tests/analytics/
+
+## Relevant Files
+
+- `apps/web/src/app/api/analytics/query/route.ts` — Query API endpoints
+- `apps/web/src/lib/analytics/filters.ts` — Multi-dimensional filtering
+- `apps/web/src/lib/analytics/timeseries.ts` — Time-series aggregation
+- `apps/web/src/lib/analytics/comparison.ts` — Comparative analysis
+- `apps/web/src/lib/analytics/costs.ts` — Cost calculation
+- `apps/web/src/lib/analytics/cache.ts` — Query caching
+- `apps/web/src/lib/analytics/validation.ts` — Query validation
+- `apps/web/tests/analytics/` — Analytics query tests
+- `docs/analytics-query-guide.md` — Analytics query guide
 - [ ] Implement event ingestion pipeline — target: src/analytics/streaming/ingestion.ts
 - [ ] Create real-time aggregation functions — target: src/analytics/streaming/aggregation.ts
 - [ ] Implement sliding window time-series aggregation — target: src/analytics/streaming/windows.ts

@@ -1,21 +1,21 @@
 ---
 story_id: "05-003"
-story_title: "Multi-Tenant Architecture Foundation"
-story_name: "multi-tenant-foundation"
+story_title: "Enterprise Emitter Mode Foundation"
+story_name: "emitter-mode"
 prd_name: "prd-multi-tenant-ai-analytics"
 prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 5
 parallel_id: 3
-branch: "feature/current/prd-multi-tenant-ai-analytics/story-05-003-multi-tenant-foundation"
+branch: "feature/current/prd-ai-analytics/story-05-003-emitter-mode"
 status: "todo"
 assignee: ""
 reviewer: ""
-dependencies: ["01-002", "04-002"]
+dependencies: ["01-003", "04-002"]
 parallel_safe: false
-modules: ["architecture", "multi-tenant"]
+modules: ["proxy", "architecture"]
 priority: "COULD"
 risk_level: "high"
-tags: ["feat", "architecture", "multi-tenant"]
+tags: ["feat", "proxy", "enterprise"]
 due: "2025-05-31"
 created_at: "2025-06-20"
 updated_at: "2025-06-20"
@@ -23,11 +23,30 @@ updated_at: "2025-06-20"
 
 ## Summary
 
-Design and implement the architectural foundation for future multi-tenant capabilities. This story prepares the codebase for commercial multi-tenant deployments while maintaining single-tenant functionality for open-source users.
+Design and implement the proxy emitter mode foundation for future enterprise deployments. This enables the proxy to operate in emitter mode, sending telemetry to downstream collector services instead of writing directly to the database, preparing the architecture for high-scale commercial deployments.
 
 ## Sub-Tasks
 
-- [ ] Design multi-tenant data isolation strategy — target: src/multi-tenant/isolation.ts
+- [ ] Design emitter mode architecture and protocol — target: apps/proxy/src/emitter/architecture.rs
+- [ ] Implement telemetry emission to message queue (Redis/Kafka) — target: apps/proxy/src/emitter/queue.rs
+- [ ] Add HTTP-based telemetry emission for collector service — target: apps/proxy/src/emitter/http.rs
+- [ ] Create emitter mode configuration and validation — target: apps/proxy/src/emitter/config.rs
+- [ ] Implement fallback and error handling for emission failures — target: apps/proxy/src/emitter/errors.rs
+- [ ] Add emitter mode health monitoring and status — target: apps/proxy/src/emitter/health.rs
+- [ ] Create emitter mode tests and integration validation — target: apps/proxy/tests/emitter/
+- [ ] Document emitter mode deployment patterns — target: docs/emitter-mode-guide.md
+
+## Relevant Files
+
+- `apps/proxy/src/emitter/architecture.rs` — Emitter mode architecture
+- `apps/proxy/src/emitter/queue.rs` — Message queue emission
+- `apps/proxy/src/emitter/http.rs` — HTTP-based emission
+- `apps/proxy/src/emitter/config.rs` — Emitter configuration
+- `apps/proxy/src/emitter/errors.rs` — Error handling
+- `apps/proxy/src/emitter/health.rs` — Health monitoring
+- `apps/proxy/tests/emitter/` — Emitter mode tests
+- `docs/emitter-mode-guide.md` — Emitter mode guide
+- `apps/proxy/src/config.rs` — Updated with emitter mode support
 - [ ] Implement tenant context and routing — target: src/multi-tenant/context.ts
 - [ ] Create tenant configuration management system — target: src/multi-tenant/config.ts
 - [ ] Add tenant-aware database queries and scoping — target: src/multi-tenant/database.ts

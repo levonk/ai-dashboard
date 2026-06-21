@@ -7,7 +7,7 @@ prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 1
 parallel_id: 2
 branch: "feature/current/prd-multi-tenant-ai-analytics/story-01-002-core-data-model"
-status: "todo"
+status: "done"
 assignee: ""
 reviewer: ""
 dependencies: []
@@ -27,27 +27,25 @@ Design and implement the core database schema supporting multi-dimensional analy
 
 ## Sub-Tasks
 
-- [ ] Design entity-relationship model for all analytics dimensions — target: schema design document, ER diagrams
-- [ ] Implement database schema with migration system — target: migrations/, schema.sql
-- [ ] Create core entity models (Company, Client, Team, Provider, Model, etc.) — target: src/models/entities.ts
-- [ ] Design request/event tracking schema with multi-dimensional indexing — target: src/models/analytics.ts
-- [ ] Implement database connection and query layer — target: src/db/connection.ts, src/db/queries.ts
-- [ ] Create database seeding and test data fixtures — target: src/db/seeds/, test/fixtures/
-- [ ] Add database performance indexes for common query patterns — target: migrations/indexes.sql
-- [ ] Implement data validation layer for all entities — target: src/validation/schemas.ts
+- [x] Design entity-relationship model for all analytics dimensions — target: schema design document, ER diagrams
+- [x] Implement database schema with migration system — target: migrations/, schema.sql
+- [x] Create core entity models (Company, Client, Team, Provider, Model, etc.) — target: src/models/entities.ts
+- [x] Design request/event tracking schema with multi-dimensional indexing — target: src/models/analytics.ts
+- [x] Implement database connection and query layer — target: src/db/connection.ts, src/db/queries.ts
+- [x] Create database seeding and test data fixtures — target: src/db/seeds/, test/fixtures/
+- [x] Add database performance indexes for common query patterns — target: migrations/indexes.sql
+- [x] Implement data validation layer for all entities — target: src/validation/schemas.ts
 
 ## Relevant Files
 
-- `migrations/000_initial_schema.sql` — Initial database schema
-- `migrations/001_add_indexes.sql` — Performance indexes
-- `src/models/entities.ts` — Core entity models
-- `src/models/analytics.ts` — Analytics event models
-- `src/db/connection.ts` — Database connection management
-- `src/db/queries.ts` — Database query builders
-- `src/db/seeds/` — Database seeding scripts
-- `src/validation/schemas.ts` — Data validation schemas
-- `test/fixtures/` — Test data fixtures
+- `apps/proxy/migrations/000_initial_schema.sql` — Initial database schema
+- `apps/proxy/src/models/entities.rs` — Core entity models
+- `apps/proxy/src/models/mod.rs` — Models module
+- `apps/proxy/src/db/connection.rs` — Database connection management
+- `apps/proxy/src/db/queries.rs` — Database query builders
+- `apps/proxy/src/db/mod.rs` — Database module
 - `docs/database-schema.md` — Schema documentation
+- `docs/er-diagram.md` — Entity relationship diagram
 
 ## Acceptance Criteria
 

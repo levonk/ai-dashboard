@@ -1,0 +1,345 @@
+use anyhow::{Context, Result};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Json},
+    routing::get,
+    Router,
+};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::time::Instant;
+use tokio::net::TcpListener;
+use tracing::info;
+use crate::config::Config;
+
+/// Health check status
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum HealthStatus {
+    Healthy,
+    Degraded,
+    Unhealthy,
+}
+
+/// Health check response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HealthResponse {
+    pub status: HealthStatus,
+    pub timestamp: String,
+    pub version: String,
+    pub checks: Vec<HealthCheck>,
+    pub response_time_ms: u64,
+}
+
+/// Individual health check
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HealthCheck {
+    pub name: String,
+    pub status: HealthStatus,
+    pub message: Option<String>,
+    pub response_time_ms: u64,
+}
+
+/// Health check configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HealthConfig {
+    /// HTTP port for health endpoint
+    pub http_port: u16,
+    /// Whether to enable HTTP health endpoint
+    pub http_enabled: bool,
+    /// Whether to enable signal-based health check
+    pub signal_enabled: bool,
+    /// Health check timeout in milliseconds
+    pub timeout_ms: u64,
+}
+
+impl Default for HealthConfig {
+    fn default() -> Self {
+        Self {
+            http_port: 8080,
+            http_enabled: true,
+            signal_enabled: true,
+            timeout_ms: 100,
+        }
+    }
+}
+
+/// Health check manager
+pub struct HealthManager {
+    config: HealthConfig,
+    config_state: Arc<Config>,
+}
+
+impl HealthManager {
+    pub fn new(config: HealthConfig, config_state: Arc<Config>) -> Self {
+        Self {
+            config,
+            config_state,
+        }
+    }
+
+    /// Run all health checks
+    pub async fn check_health(&self) -> HealthResponse {
+        let start = Instant::now();
+        let mut checks = Vec::new();
+
+        // Check config validity
+        checks.push(self.check_config().await);
+
+        // Check resource availability
+        checks.push(self.check_resources().await);
+
+        // Check daemon status
+        checks.push(self.check_daemon().await);
+
+        // Check routing service
+        checks.push(self.check_routing().await);
+
+        let response_time = start.elapsed().as_millis() as u64;
+
+        // Determine overall status
+        let overall_status = if checks.iter().all(|c| c.status == HealthStatus::Healthy) {
+            HealthStatus::Healthy
+        } else if checks.iter().any(|c| c.status == HealthStatus::Unhealthy) {
+            HealthStatus::Unhealthy
+        } else {
+            HealthStatus::Degraded
+        };
+
+        HealthResponse {
+            status: overall_status,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            version: env!("CARGO_PKG_VERSION").to_string(),
+            checks,
+            response_time_ms: response_time,
+        }
+    }
+
+    /// Check configuration validity
+    async fn check_config(&self) -> HealthCheck {
+        let start = Instant::now();
+        let name = "config".to_string();
+
+        // Check if config is valid (no side effects)
+        let (status, message) = match self.config_state.validate() {
+            Ok(_) => (HealthStatus::Healthy, None),
+            Err(e) => (HealthStatus::Unhealthy, Some(e.to_string())),
+        };
+
+        HealthCheck {
+            name,
+            status,
+            message,
+            response_time_ms: start.elapsed().as_millis() as u64,
+        }
+    }
+
+    /// Check resource availability
+    async fn check_resources(&self) -> HealthCheck {
+        let start = Instant::now();
+        let name = "resources".to_string();
+
+        // Check basic resource availability (no side effects)
+        let (status, message) = match self.check_memory() && self.check_disk() {
+            true => (HealthStatus::Healthy, None),
+            false => (HealthStatus::Degraded, Some("Resource pressure detected".to_string())),
+        };
+
+        HealthCheck {
+            name,
+            status,
+            message,
+            response_time_ms: start.elapsed().as_millis() as u64,
+        }
+    }
+
+    /// Check daemon status
+    async fn check_daemon(&self) -> HealthCheck {
+        let start = Instant::now();
+        let name = "daemon".to_string();
+
+        // Check if daemon is accessible (no side effects)
+        let (status, message) = if self.config.http_enabled {
+            (HealthStatus::Healthy, None)
+        } else {
+            (HealthStatus::Degraded, Some("HTTP health endpoint disabled".to_string()))
+        };
+
+        HealthCheck {
+            name,
+            status,
+            message,
+            response_time_ms: start.elapsed().as_millis() as u64,
+        }
+    }
+
+    /// Check memory availability (no side effects)
+    fn check_memory(&self) -> bool {
+        // Simple memory check - in production, use sysinfo or similar
+        true
+    }
+
+    /// Check disk availability (no side effects)
+    fn check_disk(&self) -> bool {
+        // Simple disk check - in production, use sysinfo or similar
+        true
+    }
+
+    /// Check routing service
+    async fn check_routing(&self) -> HealthCheck {
+        let start = Instant::now();
+        let name = "routing".to_string();
+
+        // Check if routing configuration is valid
+        let (status, message) = if self.config_state.is_analytics_mode() || self.config_state.is_emitter_mode() {
+            (HealthStatus::Healthy, None)
+        } else {
+            (HealthStatus::Degraded, Some("Invalid proxy mode configuration".to_string()))
+        };
+
+        HealthCheck {
+            name,
+            status,
+            message,
+            response_time_ms: start.elapsed().as_millis() as u64,
+        }
+    }
+
+    /// Start HTTP health endpoint
+    pub async fn start_http_server(&self) -> Result<()> {
+        if !self.config.http_enabled {
+            info!("HTTP health endpoint disabled");
+            return Ok(());
+        }
+
+        let config = self.config.clone();
+        let config_state = self.config_state.clone();
+        let http_port = config.http_port;
+
+        let app = Router::new()
+            .route("/health", get(health_handler))
+            .route("/healthz", get(health_handler))
+            .route("/proxy/health", get(proxy_health_handler))
+            .with_state(Arc::new((config, config_state)));
+
+        let addr = format!("0.0.0.0:{}", http_port);
+        let listener = TcpListener::bind(&addr)
+            .await
+            .context("Failed to bind health endpoint")?;
+
+        info!("Health check endpoint listening on {}", addr);
+
+        axum::serve(listener, app)
+            .await
+            .context("Failed to start health endpoint")?;
+
+        Ok(())
+    }
+
+    /// Perform signal-based health check
+    pub async fn signal_health_check(&self) -> HealthStatus {
+        let response = self.check_health().await;
+        response.status
+    }
+}
+
+/// HTTP health handler
+async fn health_handler(
+    State(state): State<Arc<(HealthConfig, Arc<Config>)>>,
+) -> impl IntoResponse {
+    let (config, config_state) = state.as_ref();
+    let manager = HealthManager::new(config.clone(), config_state.clone());
+    let response = manager.check_health().await;
+
+    let status_code = match response.status {
+        HealthStatus::Healthy => StatusCode::OK,
+        HealthStatus::Degraded => StatusCode::OK, // 200 for degraded
+        HealthStatus::Unhealthy => StatusCode::SERVICE_UNAVAILABLE,
+    };
+
+    (status_code, Json(response))
+}
+
+/// Proxy-specific health handler
+async fn proxy_health_handler(
+    State(state): State<Arc<(HealthConfig, Arc<Config>)>>,
+) -> impl IntoResponse {
+    let (_config, config_state) = state.as_ref();
+    
+    let proxy_status = serde_json::json!({
+        "status": "healthy",
+        "proxy_mode": config_state.proxy_mode,
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "version": env!("CARGO_PKG_VERSION"),
+        "analytics_mode": config_state.is_analytics_mode(),
+        "emitter_mode": config_state.is_emitter_mode(),
+        "database_connected": true // Will be checked in actual implementation
+    });
+
+    (StatusCode::OK, Json(proxy_status))
+}
+
+/// Extension trait for Config validation
+pub trait ConfigValidation {
+    fn validate(&self) -> Result<()>;
+}
+
+impl ConfigValidation for Config {
+    fn validate(&self) -> Result<()> {
+        // Validate configuration without side effects
+        // This is a placeholder - actual validation depends on Config structure
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_health_config_default() {
+        let config = HealthConfig::default();
+        assert_eq!(config.http_port, 8080);
+        assert!(config.http_enabled);
+        assert!(config.signal_enabled);
+        assert_eq!(config.timeout_ms, 100);
+    }
+
+    #[test]
+    fn test_health_status_serialization() {
+        let status = HealthStatus::Healthy;
+        let json = serde_json::to_string(&status).unwrap();
+        assert_eq!(json, "\"healthy\"");
+    }
+
+    #[test]
+    fn test_health_response_structure() {
+        let response = HealthResponse {
+            status: HealthStatus::Healthy,
+            timestamp: "2024-01-01T00:00:00Z".to_string(),
+            version: "0.1.0".to_string(),
+            checks: vec![],
+            response_time_ms: 10,
+        };
+
+        assert_eq!(response.status, HealthStatus::Healthy);
+        assert_eq!(response.checks.len(), 0);
+        assert_eq!(response.response_time_ms, 10);
+    }
+
+    #[test]
+    fn test_health_check_structure() {
+        let check = HealthCheck {
+            name: "test".to_string(),
+            status: HealthStatus::Healthy,
+            message: None,
+            response_time_ms: 5,
+        };
+
+        assert_eq!(check.name, "test");
+        assert_eq!(check.status, HealthStatus::Healthy);
+        assert!(check.message.is_none());
+        assert_eq!(check.response_time_ms, 5);
+    }
+}

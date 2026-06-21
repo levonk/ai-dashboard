@@ -1,0 +1,153 @@
+.\" Man page for ai-analytics-proxy
+.\" Contact: 
+.TH AI-ANALYTICS-PROXY 1 "" "ai-analytics-proxy" "User Commands"
+.SH NAME
+ai-analytics-proxy \- AI Analytics Proxy Server - Routes AI requests and collects telemetry
+.SH SYNOPSIS
+.B ai-analytics-proxy
+[\fIOPTION\fR] [\fICOMMAND\fR]
+.SH DESCRIPTION
+ai-analytics-proxy is a command-line tool that AI Analytics Proxy Server - Routes AI requests and collects telemetry.
+.PP
+It provides a modern, user-friendly interface with support for configuration,
+logging, and various output formats.
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help information
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version information
+.TP
+\fB\-\-config\fR=\fIPATH\fR
+Path to configuration file (default: ~/.config/ai-analytics-proxy/config.toml)
+.TP
+\fB\-\-color\fR=\fImode\fR
+Color output mode: auto, always, never (default: auto)
+.TP
+\fB\-\-no\-pager\fR
+Disable pager for long output
+.TP
+\fB\-\-verbose\fR, \fB\-v\fR
+Increase verbosity (can be used multiple times)
+.TP
+\fB\-\-quiet\fR, \fB\-q\fR
+Decrease verbosity (suppress non-error output)
+.TP
+\fB\-\-debug\fR
+Enable debug output
+.TP
+\fB\-\-install\fR
+Install shell completions and initialize configuration
+.TP
+\fB\-\-uninstall\fR
+Remove shell completions and configuration
+.TP
+\fB\-\-man\fR
+Display this man page
+.SH COMMANDS
+.TP
+\fBconfig\fR
+Manage configuration (show, reset, validate)
+.TP
+\fBdaemon\fR
+Manage daemon processes (start, stop, restart, status, list-jobs, cancel-job)
+.TP
+\fBcompletion\fR
+Generate shell completion scripts (bash, zsh, fish, elvish, powershell)
+.TP
+\fBdoctor\fR
+Run diagnostics and health checks (all, config, daemon, terminal)
+.SH ENVIRONMENT
+.TP
+\fBAI-ANALYTICS-PROXY_DEBUG\fR
+Enable debug mode
+.TP
+\fBAI-ANALYTICS-PROXY_LOG\fR
+Set log level (error, warn, info, debug, trace)
+.TP
+\fBAI-ANALYTICS-PROXY_QUIET\fR
+Enable quiet mode
+.TP
+\fBNO_COLOR\fR
+Disable colored output (takes precedence over --color)
+.TP
+\fBRUST_LOG\fR
+Set Rust tracing log level
+.SH FILES
+.TP
+\fI~/.config/ai-analytics-proxy/config.toml\fR
+User configuration file
+.TP
+\fI~/.local/share/ai-analytics-proxy/\fR
+Data directory for logs, cache, etc.
+.SH EXAMPLES
+.PP
+Show help:
+.PP
+.RS
+.nf
+ai-analytics-proxy --help
+.fi
+.RE
+.PP
+Run with verbose output:
+.PP
+.RS
+.nf
+ai-analytics-proxy --verbose
+.fi
+.RE
+.PP
+Show configuration:
+.PP
+.RS
+.nf
+ai-analytics-proxy config show
+.fi
+.RE
+.PP
+Generate shell completions:
+.PP
+.RS
+.nf
+ai-analytics-proxy completion bash
+.fi
+.RE
+.PP
+Run diagnostics:
+.PP
+.RS
+.nf
+ai-analytics-proxy doctor all
+.fi
+.RE
+.SH EXIT STATUS
+.TP
+0
+Success
+.TP
+1
+General error
+.TP
+2
+Usage error (invalid arguments)
+.TP
+3
+Configuration error
+.TP
+4
+Network error
+.TP
+5
+Permission error
+.TP
+124
+Timeout
+.TP
+130
+Interrupted (SIGINT)
+.SH BUGS
+Report bugs at: /issues
+.SH SEE ALSO
+The full documentation is available at: 

@@ -1,0 +1,51 @@
+{
+  "name": "ai-analytics-proxy",
+  "version": "0.1.0",
+  "description": "AI Analytics Proxy Server - Routes AI requests and collects telemetry",
+  "packages": [
+    "rustc",
+    "cargo",
+    "rust-analyzer",
+    "clippy",
+    "rustfmt",
+    "just",
+    "cargo-watch",
+    "cargo-tarpaulin",
+    "cargo-audit",
+    "pkg-config",
+    "openssl",
+    "openssl.dev",
+    "postgresql",
+    "redis"],
+  "shell": {
+    "init_hook": [
+      "just bootstrap-internal"
+    ]
+  },
+  "scripts": {
+    "bootstrap": "just bootstrap-internal",
+    "doctor": "just doctor-internal",
+    "clean": "just clean-internal",
+    "build": "just build-internal",
+    "lint": "just lint-internal",
+    "test": "just test-internal",
+    "typecheck": "just typecheck-internal",
+    "dev": "just dev-internal",
+    "debug": "just debug-internal",
+    "install": "just install-internal",
+    "release": "just release-internal",
+    "serve": "just serve-internal"},
+  "env": {
+    "RUST_LOG": "info",
+    "RUST_BACKTRACE": "1",
+    "DATABASE_URL": "postgresql://localhost/ai-analytics-proxy",
+    "REDIS_URL": "redis://localhost:6379",
+    "HTTP_PORT": "8080",
+    "HTTP_HOST": "0.0.0.0"},
+    "hooks": {
+    "on_create": [
+      "cargo fetch"
+    ]
+  }
+
+}

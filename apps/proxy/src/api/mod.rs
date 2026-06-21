@@ -1,0 +1,25 @@
+use axum::{Json, response::IntoResponse};
+use serde::Serialize;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+#[derive(Serialize)]
+pub struct HealthResponse {
+    pub status: String,
+    pub timestamp: u64,
+    pub version: String,
+}
+
+pub async fn health_check() -> impl IntoResponse {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let response = HealthResponse {
+        status: "healthy".to_string(),
+        timestamp,
+        version: env!("CARGO_PKG_VERSION").to_string(),
+    };
+
+    Json(response)
+}

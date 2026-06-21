@@ -1,0 +1,554 @@
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use tokio::process::Child;
+use tokio::sync::RwLock;
+use tracing::{debug, info, warn};
+use crate::resource::{ResourceLimits, ResourceLimiter};
+use crate::health::{HealthConfig, HealthManager};
+
+/// Daemon mode
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum DaemonMode {
+    /// Standard execution mode
+    Execution,
+    /// Data collection mode
+    Collection,
+    /// Offline processing mode
+    Processing,
+}
+
+/// Daemon configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DaemonConfig {
+    /// Whether daemon mode is enabled
+    pub enabled: bool,
+    /// Path to daemon socket (Unix) or port (HTTP)
+    pub socket_path: Option<String>,
+    /// Maximum number of concurrent jobs
+    pub max_jobs: usize,
+    /// Job timeout in seconds
+    pub job_timeout: u64,
+    /// Whether to auto-spawn daemon on async operation
+    pub auto_spawn: bool,
+    /// Maximum memory limit for jobs (e.g., "512M", "2G")
+    pub max_memory: Option<String>,
+    /// Maximum CPU usage for jobs (1-100)
+    pub max_cpu: Option<u8>,
+    /// Health check configuration
+    pub health_config: Option<HealthConfig>,
+    /// Daemon mode (execution, collection, or processing)
+    pub mode: DaemonMode,
+    /// Data storage path for collection mode
+    pub data_storage_path: Option<String>,
+}
+
+impl Default for DaemonConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            socket_path: None,
+            max_jobs: 10,
+            job_timeout: 300,
+            auto_spawn: true,
+            max_memory: None,
+            max_cpu: None,
+            health_config: Some(HealthConfig::default()),
+            mode: DaemonMode::Execution,
+            data_storage_path: None,
+        }
+    }
+}
+
+/// Job status
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum JobStatus {
+    Pending,
+    Running,
+    Completed,
+    Failed,
+    Cancelled,
+}
+
+/// Job type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum JobType {
+    /// Standard execution job
+    Execution,
+    /// Data collection job
+    Collection,
+    /// Offline processing job
+    Processing,
+}
+
+/// Job information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Job {
+    pub id: String,
+    pub command: String,
+    pub status: JobStatus,
+    pub output: String,
+    pub error: Option<String>,
+    pub created_at: String,
+    pub started_at: Option<String>,
+    pub completed_at: Option<String>,
+    /// Resource limits for this job
+    pub resource_limits: Option<ResourceLimits>,
+    /// Job type (execution, collection, or processing)
+    pub job_type: JobType,
+    /// Data path for collection/processing jobs
+    pub data_path: Option<String>,
+}
+
+impl Job {
+    pub fn new(id: String, command: String, resource_limits: Option<ResourceLimits>) -> Self {
+        let now = chrono::Utc::now().to_rfc3339();
+        Self {
+            id,
+            command,
+            status: JobStatus::Pending,
+            output: String::new(),
+            error: None,
+            created_at: now,
+            started_at: None,
+            completed_at: None,
+            resource_limits,
+            job_type: JobType::Execution,
+            data_path: None,
+        }
+    }
+
+    pub fn new_collection(id: String, command: String, data_path: String, resource_limits: Option<ResourceLimits>) -> Self {
+        let now = chrono::Utc::now().to_rfc3339();
+        Self {
+            id,
+            command,
+            status: JobStatus::Pending,
+            output: String::new(),
+            error: None,
+            created_at: now,
+            started_at: None,
+            completed_at: None,
+            resource_limits,
+            job_type: JobType::Collection,
+            data_path: Some(data_path),
+        }
+    }
+
+    pub fn new_processing(id: String, command: String, data_path: String, resource_limits: Option<ResourceLimits>) -> Self {
+        let now = chrono::Utc::now().to_rfc3339();
+        Self {
+            id,
+            command,
+            status: JobStatus::Pending,
+            output: String::new(),
+            error: None,
+            created_at: now,
+            started_at: None,
+            completed_at: None,
+            resource_limits,
+            job_type: JobType::Processing,
+            data_path: Some(data_path),
+        }
+    }
+}
+
+/// Daemon process manager
+pub struct DaemonManager {
+    config: DaemonConfig,
+    jobs: RwLock<HashMap<String, Job>>,
+    daemon_process: RwLock<Option<Child>>,
+    health_manager: Option<HealthManager>,
+}
+
+impl DaemonManager {
+    pub fn new(config: DaemonConfig) -> Self {
+        Self {
+            config,
+            jobs: RwLock::new(HashMap::new()),
+            daemon_process: RwLock::new(None),
+            health_manager: None,
+        }
+    }
+
+    /// Set health manager (called after Config is available)
+    pub fn set_health_manager(&mut self, health_manager: HealthManager) {
+        self.health_manager = Some(health_manager);
+    }
+
+    /// Check if daemon is running
+    pub async fn is_running(&self) -> bool {
+        let process = self.daemon_process.read().await;
+        if let Some(child) = process.as_ref() {
+            child.id().is_some()
+        } else {
+            false
+        }
+    }
+
+    /// Start the daemon process
+    pub async fn start(&self) -> Result<()> {
+        if self.is_running().await {
+            info!("Daemon is already running");
+            return Ok(());
+        }
+
+        if !self.config.enabled {
+            warn!("Daemon is disabled in configuration");
+            return Err(anyhow::anyhow!("Daemon is disabled"));
+        }
+
+        info!("Starting daemon process");
+
+        // Start health check server if configured
+        if let Some(ref health_config) = self.config.health_config {
+            info!("Health check server configured on port {}", health_config.http_port);
+            // Note: In actual implementation, spawn the health check server here
+            // For the boilerplate, we log the configuration
+        }
+
+        // Platform-specific daemon spawning
+        #[cfg(unix)]
+        {
+            self.spawn_unix_daemon().await?;
+        }
+
+        #[cfg(windows)]
+        {
+            self.spawn_windows_daemon().await?;
+        }
+
+        #[cfg(not(any(unix, windows)))]
+        {
+            return Err(anyhow::anyhow!("Daemon not supported on this platform"));
+        }
+
+        info!("Daemon process started successfully");
+        Ok(())
+    }
+
+    /// Stop the daemon process
+    pub async fn stop(&self) -> Result<()> {
+        let mut process = self.daemon_process.write().await;
+        if let Some(mut child) = process.take() {
+            info!("Stopping daemon process");
+            child.kill().await.context("Failed to kill daemon process")?;
+            info!("Daemon process stopped");
+        }
+        Ok(())
+    }
+
+    /// Submit a job to the daemon
+    pub async fn submit_job(&self, command: String, resource_limits: Option<ResourceLimits>) -> Result<String> {
+        if !self.is_running().await && self.config.auto_spawn {
+            info!("Auto-spawning daemon for job submission");
+            self.start().await?;
+        }
+
+        if !self.is_running().await {
+            return Err(anyhow::anyhow!("Daemon is not running and auto-spawn is disabled"));
+        }
+
+        let job_id = uuid::Uuid::new_v4().to_string();
+        let job = Job::new(job_id.clone(), command, resource_limits);
+
+        {
+            let mut jobs = self.jobs.write().await;
+            jobs.insert(job_id.clone(), job);
+        }
+
+        info!("Submitted job: {}", job_id);
+        self.execute_job(job_id.clone()).await?;
+
+        Ok(job_id)
+    }
+
+    /// Submit a collection job to the daemon
+    pub async fn submit_collection_job(&self, command: String, data_path: String, resource_limits: Option<ResourceLimits>) -> Result<String> {
+        if !self.is_running().await && self.config.auto_spawn {
+            info!("Auto-spawning daemon for collection job submission");
+            self.start().await?;
+        }
+
+        if !self.is_running().await {
+            return Err(anyhow::anyhow!("Daemon is not running and auto-spawn is disabled"));
+        }
+
+        if self.config.mode != DaemonMode::Collection {
+            warn!("Daemon is not in collection mode, job may not behave as expected");
+        }
+
+        let job_id = uuid::Uuid::new_v4().to_string();
+        let job = Job::new_collection(job_id.clone(), command, data_path, resource_limits);
+
+        {
+            let mut jobs = self.jobs.write().await;
+            jobs.insert(job_id.clone(), job);
+        }
+
+        info!("Submitted collection job: {}", job_id);
+        self.execute_job(job_id.clone()).await?;
+
+        Ok(job_id)
+    }
+
+    /// Submit a processing job to the daemon
+    pub async fn submit_processing_job(&self, command: String, data_path: String, resource_limits: Option<ResourceLimits>) -> Result<String> {
+        if !self.is_running().await && self.config.auto_spawn {
+            info!("Auto-spawning daemon for processing job submission");
+            self.start().await?;
+        }
+
+        if !self.is_running().await {
+            return Err(anyhow::anyhow!("Daemon is not running and auto-spawn is disabled"));
+        }
+
+        if self.config.mode != DaemonMode::Processing {
+            warn!("Daemon is not in processing mode, job may not behave as expected");
+        }
+
+        let job_id = uuid::Uuid::new_v4().to_string();
+        let job = Job::new_processing(job_id.clone(), command, data_path, resource_limits);
+
+        {
+            let mut jobs = self.jobs.write().await;
+            jobs.insert(job_id.clone(), job);
+        }
+
+        info!("Submitted processing job: {}", job_id);
+        self.execute_job(job_id.clone()).await?;
+
+        Ok(job_id)
+    }
+
+    /// Execute a job
+    async fn execute_job(&self, job_id: String) -> Result<()> {
+        // Get job resource limits
+        let resource_limits = {
+            let jobs = self.jobs.read().await;
+            jobs.get(&job_id).and_then(|job| job.resource_limits.clone())
+        };
+
+        // Start resource limiter if limits are set
+        let mut limiter = if let Some(limits) = resource_limits {
+            info!("Job {} has resource limits: {:?}", job_id, limits);
+            Some(ResourceLimiter::new(limits))
+        } else {
+            None
+        };
+
+        if let Some(ref mut lim) = limiter {
+            lim.start().context("Failed to start resource limiter")?;
+        }
+
+        // Update job status to running
+        {
+            let mut jobs = self.jobs.write().await;
+            if let Some(job) = jobs.get_mut(&job_id) {
+                job.status = JobStatus::Running;
+                job.started_at = Some(chrono::Utc::now().to_rfc3339());
+            }
+        }
+
+        // Execute the command with resource monitoring
+        let result = self.run_command(&job_id, limiter.as_mut()).await;
+
+        // Stop resource limiter
+        if let Some(lim) = limiter {
+            lim.stop();
+        }
+
+        // Update job status based on result
+        {
+            let mut jobs = self.jobs.write().await;
+            if let Some(job) = jobs.get_mut(&job_id) {
+                match result {
+                    Ok(output) => {
+                        job.status = JobStatus::Completed;
+                        job.output = output;
+                        job.completed_at = Some(chrono::Utc::now().to_rfc3339());
+                    }
+                    Err(e) => {
+                        job.status = JobStatus::Failed;
+                        job.error = Some(e.to_string());
+                        job.completed_at = Some(chrono::Utc::now().to_rfc3339());
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Run a command and capture output
+    async fn run_command(&self, job_id: &str, limiter: Option<&mut ResourceLimiter>) -> Result<String> {
+        let jobs = self.jobs.read().await;
+        let job = jobs.get(job_id).context("Job not found")?;
+        let command = &job.command;
+
+        debug!("Executing command: {}", command);
+
+        // Check resource limits before execution
+        if let Some(ref lim) = limiter {
+            lim.check_limits().context("Resource limit check failed before execution")?;
+        }
+
+        // Parse command and arguments
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        if parts.is_empty() {
+            return Err(anyhow::anyhow!("Empty command"));
+        }
+
+        let output = tokio::process::Command::new(parts[0])
+            .args(&parts[1..])
+            .output()
+            .await
+            .context("Failed to execute command")?;
+
+        // Check resource limits after execution
+        if let Some(ref lim) = limiter {
+            lim.check_limits().context("Resource limit check failed after execution")?;
+        }
+
+        if output.status.success() {
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            Err(anyhow::anyhow!("Command failed: {}", stderr))
+        }
+    }
+
+    /// List all jobs or filter by status
+    pub async fn list_jobs(&self, filter: Option<JobStatus>) -> Vec<Job> {
+        let jobs = self.jobs.read().await;
+        if let Some(status) = filter {
+            jobs.values()
+                .filter(|j| j.status == status)
+                .cloned()
+                .collect()
+        } else {
+            jobs.values().cloned().collect()
+        }
+    }
+
+    /// Cancel a job
+    pub async fn cancel_job(&self, job_id: &str) -> Result<()> {
+        let mut jobs = self.jobs.write().await;
+        if let Some(job) = jobs.get_mut(job_id) {
+            if job.status == JobStatus::Pending || job.status == JobStatus::Running {
+                job.status = JobStatus::Cancelled;
+                job.completed_at = Some(chrono::Utc::now().to_rfc3339());
+                info!("Cancelled job: {}", job_id);
+                Ok(())
+            } else {
+                Err(anyhow::anyhow!("Cannot cancel job in status: {:?}", job.status))
+            }
+        } else {
+            Err(anyhow::anyhow!("Job not found: {}", job_id))
+        }
+    }
+
+    /// Get job by ID
+    pub async fn get_job(&self, job_id: &str) -> Option<Job> {
+        let jobs = self.jobs.read().await;
+        jobs.get(job_id).cloned()
+    }
+
+    /// Clean up old jobs
+    pub async fn cleanup_old_jobs(&self, max_age_seconds: u64) {
+        let mut jobs = self.jobs.write().await;
+        let now = chrono::Utc::now();
+        let mut to_remove = Vec::new();
+
+        for (id, job) in jobs.iter() {
+            if let Some(completed_at) = &job.completed_at {
+                if let Ok(completed) = chrono::DateTime::parse_from_rfc3339(completed_at) {
+                    let age = now.signed_duration_since(completed).num_seconds();
+                    if age > max_age_seconds as i64 {
+                        to_remove.push(id.clone());
+                    }
+                }
+            }
+        }
+
+        for id in to_remove {
+            jobs.remove(&id);
+            debug!("Removed old job: {}", id);
+        }
+    }
+
+    #[cfg(unix)]
+    async fn spawn_unix_daemon(&self) -> Result<()> {
+        // Unix daemon spawning using fork/exec
+        // For now, this is a placeholder - actual implementation would use
+        // proper daemonization techniques (double fork, setsid, etc.)
+        info!("Spawning Unix daemon");
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    async fn spawn_windows_daemon(&self) -> Result<()> {
+        // Windows service spawning
+        info!("Spawning Windows daemon");
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_daemon_config_default() {
+        let config = DaemonConfig::default();
+        assert!(config.enabled);
+        assert_eq!(config.max_jobs, 10);
+        assert_eq!(config.job_timeout, 300);
+        assert!(config.auto_spawn);
+    }
+
+    #[test]
+    fn test_job_creation() {
+        let job = Job::new("test-id".to_string(), "echo hello".to_string(), None);
+        assert_eq!(job.id, "test-id");
+        assert_eq!(job.command, "echo hello");
+        assert_eq!(job.status, JobStatus::Pending);
+        assert!(job.started_at.is_none());
+        assert!(job.completed_at.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_daemon_manager_creation() {
+        let config = DaemonConfig::default();
+        let manager = DaemonManager::new(config);
+        assert!(!manager.is_running().await);
+    }
+
+    #[tokio::test]
+    async fn test_job_submission() {
+        let config = DaemonConfig {
+            enabled: false, // Disable auto-spawn for testing
+            auto_spawn: false,
+            ..Default::default()
+        };
+        let manager = DaemonManager::new(config);
+        let result = manager.submit_job("echo test".to_string(), None).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_list_jobs() {
+        let config = DaemonConfig::default();
+        let manager = DaemonManager::new(config);
+        let jobs = manager.list_jobs(None).await;
+        assert!(jobs.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_cancel_job() {
+        let config = DaemonConfig::default();
+        let manager = DaemonManager::new(config);
+        let result = manager.cancel_job("nonexistent").await;
+        assert!(result.is_err());
+    }
+}

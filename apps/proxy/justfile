@@ -1,0 +1,415 @@
+# ai-analytics-proxy - Rust CLI Development Commands
+# Standard justfile following ADR-20260131001
+
+# Default recipe
+default:
+    @just --list
+
+# Normal targets - Developer interface (REQUIRED)
+clean:
+    just clean-internal
+
+dev:
+    just dev-internal
+
+build:
+    just build-internal
+
+test:
+    just test-internal
+
+lint:
+    just lint-internal
+
+typecheck:
+    just typecheck-internal
+
+release:
+    just release-internal
+
+# Bootstrap recipes (REQUIRED)
+bootstrap:
+    just bootstrap-internal
+
+bootstrap-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Install dependencies and initialize memory management
+    echo "🦀 Rust CLI bootstrap complete for ai-analytics-proxy!"
+
+    # Initialize tkr for task management
+    if command -v tkr >/dev/null 2>&1; then
+        if [ ! -d ".tickets" ]; then
+            echo "[bootstrap] Initializing tkr..."
+            tkr init || echo "[bootstrap] tkr init failed"
+        else
+            echo "[bootstrap] tkr already initialized"
+        fi
+    fi
+
+    # Create memory directory structure for Obsidian
+    echo "[bootstrap] Setting up memory structure..."
+    mkdir -p memory/{00-inbox,01-projects,02-decisions,03-patterns,04-learnings,05-references,98-logs,99-daily}
+
+    # Create Obsidian configuration if needed
+    if [ ! -d ".obsidian" ]; then
+        mkdir -p .obsidian
+        echo "# Obsidian configuration" > .obsidian/config.md
+    fi
+
+# Prime recipes (REQUIRED)
+prime:
+    @echo "🚀 Priming code indexing and analysis tools..."
+    @devbox run prime
+
+prime-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Update repository and index documentation
+    echo "[prime] Updating repository..."
+    git fetch || echo "[prime] git fetch failed (check remote connectivity)"
+
+    # qmd memory indexing
+    if command -v qmd >/dev/null 2>&1; then
+        echo "[prime] Indexing documentation with qmd..."
+        qmd index docs/ internal-docs/ memory/ README.md || echo "[prime] qmd indexing failed"
+        echo "[prime] qmd indexing complete."
+    else
+        echo "[prime] Skipping qmd (not installed)"
+    fi
+
+    echo "[prime] Rust CLI priming complete!"
+
+# Health and diagnostics (REQUIRED)
+doctor:
+    devbox run doctor
+
+doctor-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Check Rust CLI environment
+    echo "🔍 Checking ai-analytics-proxy development environment..."
+    if ! cargo --version >/dev/null 2>&1; then
+        echo "❌ Error: cargo not found" >&2
+        echo "💡 Suggestion: Ensure Rust toolchain is installed" >&2
+        exit 1
+    fi
+    if ! just --version >/dev/null 2>&1; then
+        echo "❌ Error: just not found" >&2
+        echo "💡 Suggestion: Ensure just is installed" >&2
+        exit 1
+    fi
+    if [ ! -f Cargo.toml ]; then
+        echo "❌ Error: Cargo.toml not found (expected in project root)" >&2
+        exit 1
+    fi
+    echo "✅ OK: Rust toolchain + just + Cargo.toml present"
+
+    # Check for memory management tools
+    if command -v qmd >/dev/null 2>&1; then
+        echo "✅ OK: qmd available for memory search"
+    else
+        echo "⚠️  WARNING: qmd not found (install with: cargo install qmd)"
+    fi
+
+    if command -v tkr >/dev/null 2>&1; then
+        echo "✅ OK: tkr available for task management"
+    else
+        echo "⚠️  WARNING: tkr not found (install from: https://github.com/levonk/tkr)"
+    fi
+
+    # Check for memory structure
+    if [ -d memory ]; then
+        echo "✅ OK: memory/ directory found"
+    else
+        echo "⚠️  WARNING: memory/ directory missing (run 'just bootstrap' to create)"
+    fi
+
+    echo "🚀 Ready to develop ai-analytics-proxy!"
+
+# Quality checks (OPTIONAL but RECOMMENDED)
+quality:
+    just lint
+    just test
+    just typecheck
+
+# Memory and task management targets (NEW)
+doc-search:
+    @echo "🔍 Searching documentation and memory..."
+    @devbox run doc-search
+
+doc-search-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Search memory and documentation with qmd
+    if command -v qmd >/dev/null 2>&1; then
+        query="${1:-.}"  # Default to show all if no query
+        qmd search "$query" | head -20
+    else
+        echo "qmd not found - falling back to ripgrep..."
+        rg --type md "$query" docs/ internal-docs/ memory/ || true
+    fi
+
+tasks:
+    @echo "📋 Listing current tasks..."
+    @devbox run tasks
+
+tasks-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # List current tasks
+    if command -v tkr >/dev/null 2>&1; then
+        tkr list --status=open
+    else
+        echo "tkr not found"
+    fi
+
+task-ready:
+    @echo "🎯 Getting next available task..."
+    @devbox run task-ready
+
+task-ready-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Get next available task
+    if command -v tkr >/dev/null 2>&1; then
+        tkr ready
+    else
+        echo "tkr not found"
+    fi
+
+task-start:
+    @echo "🚀 Starting available task..."
+    @devbox run task-start
+
+task-start-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Start working on available task
+    if command -v tkr >/dev/null 2>&1; then
+        task_id=$(tkr ready | head -1 | cut -d' ' -f1)
+        if [ -n "$task_id" ]; then
+            tkr start "$task_id"
+            echo "Started task: $task_id"
+        else
+            echo "No available tasks"
+        fi
+    else
+        echo "tkr not found"
+    fi
+
+# Language-specific commands for Rust CLI
+# Development setup (OPTIONAL)
+setup:
+    echo "🦀 Rust CLI development environment ready!"
+
+# Internal targets - Actual implementation
+clean-internal:
+    # Clean build artifacts
+    command cargo clean
+    echo "🧹 Build artifacts removed"
+
+build-internal:
+    # Build the project in debug mode
+    command cargo build
+
+release-internal:
+    # Full release pipeline: quality checks + build
+    echo "🚀 Starting release pipeline for ai-analytics-proxy..."
+    just lint-internal
+    just test-internal
+    just typecheck-internal
+    just build-release-internal
+    echo "✅ Release complete! Binary available at target/release/ai-analytics-proxy"
+
+build-release-internal:
+    # Build the project in release mode
+    command cargo build --release
+
+debug-internal:
+    # Build the project in debug mode
+    command cargo build
+
+install-internal:
+    # Install the binary locally
+    command cargo install --path .
+
+lint-internal:
+    # Lint the code using clippy
+    command cargo clippy -- -D warnings
+
+test-internal:
+    # Run tests
+    command cargo test
+
+typecheck-internal:
+    # Run type checking (cargo check)
+    command cargo check
+
+dev-internal:
+    # Run the application in development mode
+    command cargo run
+
+run-internal:
+    # Run the application with arguments
+    command cargo run
+
+serve:
+    @echo "🌐 Starting HTTP server..."
+    @devbox run serve
+
+serve-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Start the HTTP server
+    PORT="${HTTP_PORT:-8080}"
+    HOST="${HTTP_HOST:-0.0.0.0}"
+    echo "Starting server on $HOST:$PORT"
+    cargo run -- serve --port "$PORT" --host "$HOST"
+# Additional Rust-specific targets
+test-coverage-internal:
+    # Run tests with coverage
+    command cargo tarpaulin --out Html
+
+format-internal:
+    # Format code with rustfmt
+    command cargo fmt
+
+format-check-internal:
+    # Check code format
+    command cargo fmt -- --check
+
+doc-internal:
+    # Generate documentation
+    command cargo doc --open
+
+audit-internal:
+    # Audit dependencies
+    command cargo audit
+
+# Man page generation and installation
+generate-man-pages:
+    @echo "📄 Generating man pages..."
+    @devbox run generate-man-pages
+
+generate-man-pages-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Generate man pages from template
+    MAN_DIR="docs/man"
+    OUTPUT_DIR="target/man"
+    
+    # Create output directory
+    mkdir -p "$OUTPUT_DIR"
+    
+    # Process man page template
+    if [ -f "$MAN_DIR/ai-analytics-proxy.1.jinja" ]; then
+        # For template-based approach, we'd use copier to render
+        # For now, copy the template as-is (will be rendered during project generation)
+        cp "$MAN_DIR/ai-analytics-proxy.1.jinja" "$OUTPUT_DIR/ai-analytics-proxy.1"
+        echo "✅ Man page template copied to $OUTPUT_DIR/ai-analytics-proxy.1"
+    else
+        echo "⚠️  Man page template not found at $MAN_DIR/ai-analytics-proxy.1.jinja"
+    fi
+
+install-man-pages:
+    @echo "📦 Installing man pages..."
+    @devbox run install-man-pages
+
+install-man-pages-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Install man pages to system man directory
+    MAN_DIR="target/man"
+    MAN_PATH="${MANPATH:-/usr/local/share/man}"
+    
+    if [ ! -d "$MAN_DIR" ]; then
+        echo "⚠️  Man pages not generated. Run 'just generate-man-pages' first."
+        exit 1
+    fi
+    
+    # Install man page (requires sudo)
+    echo "Installing man page to $MAN_PATH/man1/"
+    sudo mkdir -p "$MAN_PATH/man1/"
+    sudo cp "$MAN_DIR/ai-analytics-proxy.1" "$MAN_PATH/man1/"
+    sudo mandb
+    echo "✅ Man page installed. Try 'man ai-analytics-proxy' to view it."
+
+validate-man-pages:
+    @echo "🔍 Validating man page format and content..."
+    @devbox run validate-man-pages
+
+validate-man-pages-internal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Validate man page format using man command
+    MAN_DIR="target/man"
+    MAN_FILE="$MAN_DIR/ai-analytics-proxy.1"
+    
+    if [ ! -f "$MAN_FILE" ]; then
+        echo "⚠️  Man page not found. Run 'just generate-man-pages' first."
+        exit 1
+    fi
+    
+    echo "Validating man page format..."
+    
+    # Check if man command can parse the file
+    if command -v man >/dev/null 2>&1; then
+        # Use man --warnings to check for formatting issues
+        if man --warnings --local-file "$MAN_FILE" 2>&1 | grep -q "warning"; then
+            echo "⚠️  Man page has formatting warnings:"
+            man --warnings --local-file "$MAN_FILE" 2>&1 | grep "warning"
+        else
+            echo "✅ Man page format is valid"
+        fi
+    else
+        echo "⚠️  man command not available, skipping format validation"
+    fi
+    
+    # Check for required sections
+    echo "Checking for required sections..."
+    REQUIRED_SECTIONS=("NAME" "SYNOPSIS" "DESCRIPTION" "OPTIONS" "EXAMPLES" "EXIT STATUS" "ENVIRONMENT" "FILES" "BUGS" "SEE ALSO")
+    for section in "${REQUIRED_SECTIONS[@]}"; do
+        if grep -q "\.SH $section" "$MAN_FILE"; then
+            echo "  ✅ $section section found"
+        else
+            echo "  ❌ $section section missing"
+            exit 1
+        fi
+    done
+    
+    echo "✅ Man page validation complete"
+
+# Help target
+help:
+    echo "🦀 ai-analytics-proxy - Rust CLI Application"
+    echo ""
+    echo "Standard commands:"
+    echo "  just bootstrap    - Initialize the development environment"
+    echo "  just build        - Build the project"
+    echo "  just test         - Run tests"
+    echo "  just lint         - Run linting"
+    echo "  just typecheck    - Run type checking"
+    echo "  just dev           - Run in development mode"
+    echo "  just clean         - Clean build artifacts"
+    echo "  just doctor        - Check environment health"
+    echo "  just quality       - Run all quality checks"
+    echo "  just release       - Full release pipeline"
+    echo "  just prime         - Index documentation and update repository"
+    echo ""
+    echo "Memory & Task Management:"
+    echo "  just doc-search    - Search documentation and memory"
+    echo "  just tasks         - List current tasks"
+    echo "  just task-ready    - Get next available task"
+    echo "  just task-start    - Start working on available task"
+    echo ""
+    echo "Rust-specific commands:"
+    echo "  just debug         - Build in debug mode"
+    echo "  just install       - Install binary locally"
+    echo "  just test-coverage - Run tests with coverage"
+    echo "  just format        - Format code"
+    echo "  just doc           - Generate documentation"
+    echo "  just audit         - Audit dependencies"
+    echo ""
+    echo "Internal commands (for devbox scripts):"
+    echo "  just *-internal    - Internal implementations"

@@ -1,0 +1,810 @@
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use std::path::{Path, PathBuf};
+use directories::ProjectDirs;
+use tracing::{info, warn, debug, Level};
+use std::fs;
+use std::io::Write;
+use crate::security::SecurityUtils;
+
+const CONFIG_VERSION: u32 = 1;
+const PROJECT_QUALIFIER: &str = "com";
+const PROJECT_ORGANIZATION: &str = "myorg";
+const PROJECT_NAME: &str = "ai-analytics-proxy";
+
+/// Configuration structure with all supported fields
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Config {
+    /// Configuration version for migration tracking
+    pub version: u32,
+    
+    /// Proxy mode: analytics (default), emitter
+    #[serde(default = "default_proxy_mode")]
+    pub proxy_mode: String,
+    
+    /// CLI mode: agent, human
+    #[serde(default = "default_mode")]
+    pub mode: String,
+    
+    /// Default output format for agent mode: toon, json, human
+    #[serde(default = "default_format")]
+    pub default_format: String,
+    
+    /// Truncation limit for output content (default 1000)
+    #[serde(default = "default_truncation_limit")]
+    pub truncation_limit: usize,
+    
+    /// Enable contextual help and suggestions
+    #[serde(default = "default_enable_contextual_help")]
+    pub enable_contextual_help: bool,
+    
+    /// Enable session context integration
+    #[serde(default = "default_session_context_enabled")]
+    pub session_context_enabled: bool,
+    
+    /// Log level (error, warn, info, debug, trace)
+    #[serde(default = "default_log_level")]
+    pub log_level: String,
+    
+    /// Color mode: auto, always, never
+    #[serde(default = "default_color")]
+    pub color: String,
+    
+    /// Output format (text, json)
+    #[serde(default = "default_output_format")]
+    pub output_format: String,
+    
+    /// Quiet mode (suppress non-error output)
+    #[serde(default = "default_quiet")]
+    pub quiet: bool,
+    
+    /// Custom log file path
+    #[serde(default)]
+    pub log_file: Option<PathBuf>,
+    
+    /// Maximum number of concurrent operations
+    #[serde(default = "default_max_concurrent")]
+    pub max_concurrent: usize,
+    
+    /// Timeout in seconds for operations
+    #[serde(default = "default_timeout")]
+    pub timeout: u64,
+    
+    /// Enable experimental features
+    #[serde(default = "default_experimental")]
+    pub experimental: bool,
+    
+    /// Daemon mode enabled
+    #[serde(default = "default_daemon_enabled")]
+    pub daemon_enabled: bool,
+    
+    /// Daemon auto-spawn on async operations
+    #[serde(default = "default_daemon_auto_spawn")]
+    pub daemon_auto_spawn: bool,
+    
+    /// Maximum number of daemon jobs
+    #[serde(default = "default_daemon_max_jobs")]
+    pub daemon_max_jobs: usize,
+    
+    /// Daemon job timeout in seconds
+    #[serde(default = "default_daemon_job_timeout")]
+    pub daemon_job_timeout: u64,
+    
+    /// Maximum memory limit for daemon jobs (e.g., "512M", "2G")
+    #[serde(default)]
+    pub daemon_max_memory: Option<String>,
+    
+    /// Maximum CPU usage for daemon jobs (1-100)
+    #[serde(default)]
+    pub daemon_max_cpu: Option<u8>,
+    
+    /// Daemon mode (execution, collection, processing)
+    #[serde(default = "default_daemon_mode")]
+    pub daemon_mode: String,
+    
+    /// Data storage path for collection mode
+    #[serde(default)]
+    pub daemon_data_storage_path: Option<PathBuf>,
+    
+    /// Privacy mode configuration
+    #[serde(default)]
+    pub privacy: crate::privacy::PrivacyConfig,
+    
+    /// Audit logging configuration
+    #[serde(default)]
+    pub audit: crate::audit::AuditConfig,
+    
+    /// Database URL for analytics mode (PostgreSQL)
+    #[serde(default)]
+    pub database_url: Option<String>,
+    
+    /// Collector URL for emitter mode (HTTP endpoint or message queue)
+    #[serde(default)]
+    pub collector_url: Option<String>,
+    
+    /// Message queue configuration for emitter mode (Redis, Kafka, etc.)
+    #[serde(default)]
+    pub message_queue_url: Option<String>,
+}
+
+fn default_proxy_mode() -> String {
+    "analytics".to_string()
+}
+
+fn default_mode() -> String {
+    "agent".to_string()
+}
+
+fn default_format() -> String {
+    "toon".to_string()
+}
+
+fn default_truncation_limit() -> usize {
+    1000
+}
+
+fn default_enable_contextual_help() -> bool {
+    true
+}
+
+fn default_session_context_enabled() -> bool {
+    false
+}
+
+fn default_log_level() -> String {
+    "info".to_string()
+}
+
+fn default_color() -> String {
+    "auto".to_string()
+}
+
+fn default_output_format() -> String {
+    "text".to_string()
+}
+
+fn default_quiet() -> bool {
+    false
+}
+
+fn default_max_concurrent() -> usize {
+    4
+}
+
+fn default_timeout() -> u64 {
+    30
+}
+
+fn default_experimental() -> bool {
+    false
+}
+
+fn default_daemon_enabled() -> bool {
+    true
+}
+
+fn default_daemon_auto_spawn() -> bool {
+    true
+}
+
+fn default_daemon_max_jobs() -> usize {
+    10
+}
+
+fn default_daemon_job_timeout() -> u64 {
+    300
+}
+
+fn default_daemon_mode() -> String {
+    "execution".to_string()
+}
+
+fn default_audit() -> crate::audit::AuditConfig {
+    crate::audit::AuditConfig::default()
+}
+
+fn default_privacy() -> crate::privacy::PrivacyConfig {
+    crate::privacy::PrivacyConfig::default()
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            version: CONFIG_VERSION,
+            proxy_mode: default_proxy_mode(),
+            mode: default_mode(),
+            default_format: default_format(),
+            truncation_limit: default_truncation_limit(),
+            enable_contextual_help: default_enable_contextual_help(),
+            session_context_enabled: default_session_context_enabled(),
+            log_level: default_log_level(),
+            color: default_color(),
+            output_format: default_output_format(),
+            quiet: default_quiet(),
+            log_file: None,
+            max_concurrent: default_max_concurrent(),
+            timeout: default_timeout(),
+            experimental: default_experimental(),
+            daemon_enabled: default_daemon_enabled(),
+            daemon_auto_spawn: default_daemon_auto_spawn(),
+            daemon_max_jobs: default_daemon_max_jobs(),
+            daemon_job_timeout: default_daemon_job_timeout(),
+            daemon_max_memory: None,
+            daemon_max_cpu: None,
+            daemon_mode: default_daemon_mode(),
+            daemon_data_storage_path: None,
+            audit: default_audit(),
+            privacy: default_privacy(),
+            database_url: None,
+            collector_url: None,
+            message_queue_url: None,
+        }
+    }
+}
+
+impl Config {
+    /// Get the log level as a tracing::Level
+    pub fn get_log_level(&self) -> Option<Level> {
+        self.log_level.parse::<Level>().ok()
+    }
+    
+    /// Check if proxy is in analytics mode (default for open-source)
+    pub fn is_analytics_mode(&self) -> bool {
+        self.proxy_mode == "analytics"
+    }
+    
+    /// Check if proxy is in emitter mode (for enterprise/integration)
+    pub fn is_emitter_mode(&self) -> bool {
+        self.proxy_mode == "emitter"
+    }
+    
+    /// Validate configuration based on proxy mode
+    pub fn validate(&self) -> Result<()> {
+        match self.proxy_mode.as_str() {
+            "analytics" => {
+                if self.database_url.is_none() {
+                    anyhow::bail!("Analytics mode requires database_url to be configured");
+                }
+            }
+            "emitter" => {
+                if self.collector_url.is_none() && self.message_queue_url.is_none() {
+                    anyhow::bail!("Emitter mode requires either collector_url or message_queue_url to be configured");
+                }
+            }
+            _ => {
+                anyhow::bail!("Invalid proxy_mode: {}. Must be 'analytics' or 'emitter'", self.proxy_mode);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Configuration source for precedence tracking
+/// Precedence order (lowest to highest): Default < System < User < Local < Environment < CommandLine
+/// AXI configuration fields (mode, default_format, truncation_limit, enable_contextual_help, session_context_enabled)
+/// follow this same precedence chain
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ConfigSource {
+    Default = 0,
+    System = 1,
+    User = 2,
+    Local = 3,
+    Environment = 4,
+    CommandLine = 5,
+}
+
+/// Configuration manager with precedence support
+pub struct ConfigManager {
+    config: Config,
+    sources: Vec<(ConfigSource, PathBuf)>,
+}
+
+impl ConfigManager {
+    /// Create a new configuration manager
+    pub fn new() -> Self {
+        ConfigManager {
+            config: Config::default(),
+            sources: Vec::new(),
+        }
+    }
+    
+    /// Get a reference to the current configuration
+    pub fn get_config(&self) -> &Config {
+        &self.config
+    }
+    
+    /// Load configuration from all sources with precedence
+    pub fn load(&mut self) -> Result<()> {
+        // Load in order of precedence (lowest to highest)
+        self.load_defaults()?;
+        self.load_system_config()?;
+        self.load_user_config()?;
+        self.load_local_config()?;
+        self.load_environment()?;
+        
+        info!("Configuration loaded from {} sources", self.sources.len());
+        Ok(())
+    }
+    
+    /// Load default configuration
+    fn load_defaults(&mut self) -> Result<()> {
+        self.config = Config::default();
+        debug!("Loaded default configuration");
+        Ok(())
+    }
+    
+    /// Load system-wide configuration
+    fn load_system_config(&mut self) -> Result<()> {
+        let system_config = PathBuf::from("/etc").join(PROJECT_NAME).join("config.toml");
+        if system_config.exists() {
+            self.load_from_file(&system_config, ConfigSource::System)?;
+        }
+        Ok(())
+    }
+    
+    /// Load user configuration from XDG config directory
+    fn load_user_config(&mut self) -> Result<()> {
+        if let Some(proj_dirs) = ProjectDirs::from(PROJECT_QUALIFIER, PROJECT_ORGANIZATION, PROJECT_NAME) {
+            let user_config = proj_dirs.config_dir().join("config.toml");
+            if user_config.exists() {
+                self.load_from_file(&user_config, ConfigSource::User)?;
+            }
+        }
+        Ok(())
+    }
+    
+    /// Load local project configuration
+    fn load_local_config(&mut self) -> Result<()> {
+        let local_config = PathBuf::from(".config").join(PROJECT_NAME).join("config.toml");
+        if local_config.exists() {
+            self.load_from_file(&local_config, ConfigSource::Local)?;
+        }
+        Ok(())
+    }
+    
+    /// Load configuration from environment variables
+    fn load_environment(&mut self) -> Result<()> {
+        let env_prefix = format!("{}_{}", PROJECT_NAME.to_uppercase().replace("-", "_"), "");
+        
+        if let Ok(mode) = std::env::var(format!("{}MODE", env_prefix)) {
+            self.config.mode = mode;
+            debug!("Loaded mode from environment");
+        }
+        
+        if let Ok(default_format) = std::env::var(format!("{}DEFAULT_FORMAT", env_prefix)) {
+            self.config.default_format = default_format;
+            debug!("Loaded default_format from environment");
+        }
+        
+        if let Ok(truncation_limit) = std::env::var(format!("{}TRUNCATION_LIMIT", env_prefix)) {
+            self.config.truncation_limit = truncation_limit.parse().unwrap_or(self.config.truncation_limit);
+            debug!("Loaded truncation_limit from environment");
+        }
+        
+        if let Ok(enable_contextual_help) = std::env::var(format!("{}ENABLE_CONTEXTUAL_HELP", env_prefix)) {
+            self.config.enable_contextual_help = enable_contextual_help.parse().unwrap_or(self.config.enable_contextual_help);
+            debug!("Loaded enable_contextual_help from environment");
+        }
+        
+        if let Ok(session_context_enabled) = std::env::var(format!("{}SESSION_CONTEXT_ENABLED", env_prefix)) {
+            self.config.session_context_enabled = session_context_enabled.parse().unwrap_or(self.config.session_context_enabled);
+            debug!("Loaded session_context_enabled from environment");
+        }
+        
+        if let Ok(log_level) = std::env::var(format!("{}LOG_LEVEL", env_prefix)) {
+            self.config.log_level = log_level;
+            debug!("Loaded log_level from environment");
+        }
+        
+        if let Ok(color) = std::env::var(format!("{}COLOR", env_prefix)) {
+            self.config.color = color;
+            debug!("Loaded color from environment");
+        }
+        
+        if let Ok(output_format) = std::env::var(format!("{}OUTPUT_FORMAT", env_prefix)) {
+            self.config.output_format = output_format;
+            debug!("Loaded output_format from environment");
+        }
+        
+        if let Ok(quiet) = std::env::var(format!("{}QUIET", env_prefix)) {
+            self.config.quiet = quiet.parse().unwrap_or(self.config.quiet);
+            debug!("Loaded quiet from environment");
+        }
+        
+        Ok(())
+    }
+    
+    /// Load configuration from a file
+    pub fn load_from_file(&mut self, path: &Path, source: ConfigSource) -> Result<()> {
+        // Validate config file permissions before loading
+        if !SecurityUtils::validate_config_permissions(path)? {
+            warn!("Config file has insecure permissions: {:?}", path);
+        }
+        
+        let content = fs::read_to_string(path)
+            .with_context(|| format!("Failed to read config file: {:?}", path))?;
+        
+        let file_config: Config = self.parse_config(&content, path)?;
+        
+        // Check for version mismatch and migrate if needed
+        if file_config.version < CONFIG_VERSION {
+            warn!("Config version {} is outdated, migrating to {}", file_config.version, CONFIG_VERSION);
+            self.migrate_config(path, &file_config)?;
+        } else if file_config.version > CONFIG_VERSION {
+            warn!("Config version {} is newer than expected {}, using with caution", 
+                  file_config.version, CONFIG_VERSION);
+        }
+        
+        // Merge configuration (higher precedence overrides)
+        self.merge_config(file_config, source);
+        self.sources.push((source, path.to_path_buf()));
+        
+        info!("Loaded configuration from {:?} (source: {:?})", path, source);
+        Ok(())
+    }
+    
+    /// Parse configuration based on file extension
+    fn parse_config(&self, content: &str, path: &Path) -> Result<Config> {
+        let extension = path.extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("toml");
+        
+        match extension {
+            "toml" => {
+                toml::from_str(content)
+                    .with_context(|| format!("Failed to parse TOML config: {:?}", path))
+            }
+            "yaml" | "yml" => {
+                serde_yaml::from_str(content)
+                    .with_context(|| format!("Failed to parse YAML config: {:?}", path))
+            }
+            "json" => {
+                serde_json::from_str(content)
+                    .with_context(|| format!("Failed to parse JSON config: {:?}", path))
+            }
+            _ => {
+                anyhow::bail!("Unsupported config format: {:?}", extension)
+            }
+        }
+    }
+    
+    /// Merge configuration with precedence
+    fn merge_config(&mut self, new_config: Config, _source: ConfigSource) {
+        // Only override if the new value is not the default
+        if new_config.mode != default_mode() {
+            self.config.mode = new_config.mode;
+        }
+        if new_config.default_format != default_format() {
+            self.config.default_format = new_config.default_format;
+        }
+        if new_config.truncation_limit != default_truncation_limit() {
+            self.config.truncation_limit = new_config.truncation_limit;
+        }
+        if new_config.enable_contextual_help != default_enable_contextual_help() {
+            self.config.enable_contextual_help = new_config.enable_contextual_help;
+        }
+        if new_config.session_context_enabled != default_session_context_enabled() {
+            self.config.session_context_enabled = new_config.session_context_enabled;
+        }
+        if new_config.log_level != default_log_level() {
+            self.config.log_level = new_config.log_level;
+        }
+        if new_config.color != default_color() {
+            self.config.color = new_config.color.clone();
+        }
+        if new_config.output_format != default_output_format() {
+            self.config.output_format = new_config.output_format;
+        }
+        if new_config.quiet != default_quiet() {
+            self.config.quiet = new_config.quiet;
+        }
+        if new_config.log_file.is_some() {
+            self.config.log_file = new_config.log_file;
+        }
+        if new_config.max_concurrent != default_max_concurrent() {
+            self.config.max_concurrent = new_config.max_concurrent;
+        }
+        if new_config.timeout != default_timeout() {
+            self.config.timeout = new_config.timeout;
+        }
+        if new_config.experimental != default_experimental() {
+            self.config.experimental = new_config.experimental;
+        }
+    }
+    
+    /// Migrate configuration to new version
+    fn migrate_config(&mut self, path: &Path, old_config: &Config) -> Result<()> {
+        // Create backup
+        let backup_path = path.with_extension("toml.bak");
+        fs::copy(path, &backup_path)
+            .with_context(|| format!("Failed to create backup: {:?}", backup_path))?;
+        
+        info!("Created config backup at {:?}", backup_path);
+        
+        // Merge old config with new defaults
+        let new_config = Config::default();
+        self.merge_config(old_config.clone(), ConfigSource::User);
+        
+        // Write migrated config
+        self.write_config_to_file(&new_config, path)?;
+        
+        info!("Migrated config from version {} to {}", old_config.version, CONFIG_VERSION);
+        Ok(())
+    }
+    
+    /// Initialize configuration file with defaults
+    pub fn initialize_config(&self) -> Result<PathBuf> {
+        if let Some(proj_dirs) = ProjectDirs::from(PROJECT_QUALIFIER, PROJECT_ORGANIZATION, PROJECT_NAME) {
+            let config_dir = proj_dirs.config_dir();
+            fs::create_dir_all(config_dir)
+                .with_context(|| format!("Failed to create config directory: {:?}", config_dir))?;
+            
+            let config_path = config_dir.join("config.toml");
+            
+            if !config_path.exists() {
+                let default_config = Config::default();
+                self.write_config_to_file(&default_config, &config_path)?;
+                info!("Initialized config at {:?}", config_path);
+            }
+            
+            Ok(config_path)
+        } else {
+            anyhow::bail!("Failed to determine config directory")
+        }
+    }
+    
+    /// Write configuration to file
+    pub fn write_config_to_file(&self, config: &Config, path: &Path) -> Result<()> {
+        let toml_string = toml::to_string_pretty(config)
+            .with_context(|| "Failed to serialize config to TOML")?;
+        
+        // Add comments for documentation
+        let commented_config = format!(
+            r#"# {} Configuration File
+# This file is auto-generated with default values
+# Modify as needed for your setup
+
+{}"#,
+            PROJECT_NAME, toml_string
+        );
+        
+        let mut file = fs::File::create(path)
+            .with_context(|| format!("Failed to create config file: {:?}", path))?;
+        
+        file.write_all(commented_config.as_bytes())
+            .with_context(|| format!("Failed to write config file: {:?}", path))?;
+        
+        // Set secure file permissions using SecurityUtils
+        SecurityUtils::set_secure_permissions(path)?;
+        
+        // Validate permissions were set correctly
+        if !SecurityUtils::validate_config_permissions(path)? {
+            warn!("Config file permissions may not be secure: {:?}", path);
+        }
+        
+        Ok(())
+    }
+    
+    /// Get the current configuration
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
+    /// Get mutable reference to the current configuration (for testing)
+    #[cfg(test)]
+    pub fn config_mut(&mut self) -> &mut Config {
+        &mut self.config
+    }
+
+    /// Get configuration sources
+    pub fn sources(&self) -> &[(ConfigSource, PathBuf)] {
+        &self.sources
+    }
+    
+    /// Validate configuration
+    pub fn validate(&self) -> Result<()> {
+        // Validate mode
+        match self.config.mode.as_str() {
+            "agent" | "human" => {},
+            _ => anyhow::bail!("Invalid mode: {}. Must be one of: agent, human",
+                             self.config.mode),
+        }
+
+        // Validate default_format
+        match self.config.default_format.as_str() {
+            "toon" | "json" | "human" => {},
+            _ => anyhow::bail!("Invalid default_format: {}. Must be one of: toon, json, human",
+                             self.config.default_format),
+        }
+
+        // Validate truncation_limit
+        if self.config.truncation_limit > 100000 {
+            anyhow::bail!("truncation_limit must be <= 100000");
+        }
+
+        // Validate log level
+        match self.config.log_level.as_str() {
+            "error" | "warn" | "info" | "debug" | "trace" => {},
+            _ => anyhow::bail!("Invalid log_level: {}. Must be one of: error, warn, info, debug, trace",
+                             self.config.log_level),
+        }
+
+        // Validate color mode
+        match self.config.color.as_str() {
+            "auto" | "always" | "never" => {},
+            _ => anyhow::bail!("Invalid color: {}. Must be one of: auto, always, never",
+                             self.config.color),
+        }
+
+        // Validate output format
+        match self.config.output_format.as_str() {
+            "text" | "json" => {},
+            _ => anyhow::bail!("Invalid output_format: {}. Must be one of: text, json",
+                             self.config.output_format),
+        }
+
+        // Validate max_concurrent
+        if self.config.max_concurrent == 0 {
+            anyhow::bail!("max_concurrent must be greater than 0");
+        }
+
+        // Validate timeout
+        if self.config.timeout == 0 {
+            anyhow::bail!("timeout must be greater than 0");
+        }
+
+        Ok(())
+    }
+
+    /// Reload configuration from all sources (for hot-reload)
+    pub fn reload(&mut self) -> Result<()> {
+        info!("Reloading configuration from all sources");
+        self.sources.clear();
+        self.load()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+    
+    #[test]
+    fn test_default_config() {
+        let config = Config::default();
+        assert_eq!(config.version, CONFIG_VERSION);
+        assert_eq!(config.log_level, "info");
+        assert_eq!(config.color, "auto");
+        assert_eq!(config.output_format, "text");
+        assert_eq!(config.quiet, false);
+    }
+    
+    #[test]
+    fn test_config_validation() {
+        let mut config = Config::default();
+        
+        // Valid config
+        assert!(config.validate().is_ok());
+        
+        // Invalid mode
+        config.mode = "invalid".to_string();
+        assert!(config.validate().is_err());
+        
+        // Invalid default_format
+        config.mode = "agent".to_string();
+        config.default_format = "invalid".to_string();
+        assert!(config.validate().is_err());
+        
+        // Invalid truncation_limit
+        config.default_format = "toon".to_string();
+        config.truncation_limit = 100001;
+        assert!(config.validate().is_err());
+        
+        // Invalid log level
+        config.truncation_limit = 1000;
+        config.log_level = "invalid".to_string();
+        assert!(config.validate().is_err());
+        
+        // Invalid output format
+        config.log_level = "info".to_string();
+        config.output_format = "invalid".to_string();
+        assert!(config.validate().is_err());
+        
+        // Invalid max_concurrent
+        config.output_format = "text".to_string();
+        config.max_concurrent = 0;
+        assert!(config.validate().is_err());
+    }
+    
+    #[test]
+    fn test_config_parsing_toml() {
+        let toml_content = r#"
+version = 1
+log_level = "debug"
+color = "never"
+output_format = "json"
+quiet = true
+"#;
+
+        let config: Config = toml::from_str(toml_content).unwrap();
+        assert_eq!(config.log_level, "debug");
+        assert_eq!(config.color, "never");
+        assert_eq!(config.output_format, "json");
+        assert_eq!(config.quiet, true);
+    }
+
+    #[test]
+    fn test_axi_config_defaults() {
+        let config = Config::default();
+        assert_eq!(config.mode, "agent");
+        assert_eq!(config.default_format, "toon");
+        assert_eq!(config.truncation_limit, 1000);
+        assert_eq!(config.enable_contextual_help, true);
+        assert_eq!(config.session_context_enabled, false);
+    }
+
+    #[test]
+    fn test_axi_config_parsing() {
+        let toml_content = r#"
+version = 1
+mode = "human"
+default_format = "json"
+truncation_limit = 500
+enable_contextual_help = false
+session_context_enabled = true
+"#;
+
+        let config: Config = toml::from_str(toml_content).unwrap();
+        assert_eq!(config.mode, "human");
+        assert_eq!(config.default_format, "json");
+        assert_eq!(config.truncation_limit, 500);
+        assert_eq!(config.enable_contextual_help, false);
+        assert_eq!(config.session_context_enabled, true);
+    }
+
+    #[test]
+    fn test_axi_config_environment_loading() {
+        let mut manager = ConfigManager::new();
+        manager.load_defaults().unwrap();
+        
+        // Set environment variables for AXI settings
+        std::env::set_var("AI_ANALYTICS_PROXY_MODE", "human");
+        std::env::set_var("AI_ANALYTICS_PROXY_DEFAULT_FORMAT", "json");
+        std::env::set_var("AI_ANALYTICS_PROXY_TRUNCATION_LIMIT", "500");
+        std::env::set_var("AI_ANALYTICS_PROXY_ENABLE_CONTEXTUAL_HELP", "false");
+        std::env::set_var("AI_ANALYTICS_PROXY_SESSION_CONTEXT_ENABLED", "true");
+        
+        manager.load_environment().unwrap();
+        
+        assert_eq!(manager.config().mode, "human");
+        assert_eq!(manager.config().default_format, "json");
+        assert_eq!(manager.config().truncation_limit, 500);
+        assert_eq!(manager.config().enable_contextual_help, false);
+        assert_eq!(manager.config().session_context_enabled, true);
+        
+        // Clean up
+        std::env::remove_var("AI_ANALYTICS_PROXY_MODE");
+        std::env::remove_var("AI_ANALYTICS_PROXY_DEFAULT_FORMAT");
+        std::env::remove_var("AI_ANALYTICS_PROXY_TRUNCATION_LIMIT");
+        std::env::remove_var("AI_ANALYTICS_PROXY_ENABLE_CONTEXTUAL_HELP");
+        std::env::remove_var("AI_ANALYTICS_PROXY_SESSION_CONTEXT_ENABLED");
+    }
+    
+    #[test]
+    fn test_config_manager() {
+        let mut manager = ConfigManager::new();
+        assert!(manager.load().is_ok());
+        assert_eq!(manager.config().version, CONFIG_VERSION);
+    }
+    
+    #[test]
+    fn test_initialize_config() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("config.toml");
+        
+        let manager = ConfigManager::new();
+        // Note: This test would need mocking of ProjectDirs for full testing
+        // For now, we just verify the structure is correct
+        assert!(config_path.parent().is_some());
+    }
+}

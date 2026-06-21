@@ -1,0 +1,57 @@
+{
+  "name": "web",
+  "version": "0.0.1",
+  "sha-version": "$Id$",
+  "private": true,
+  "description": "AI Analytics Dashboard Web Application",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "*",
+    "react": "*",
+    "react-dom": "*",
+    "class-variance-authority": "*",
+    "clsx": "*",
+    "lucide-react": "*",
+    "tailwind-merge": "*",
+    "tailwindcss": "*",
+    "typescript": "*",
+    "zod": "*"
+  },
+  "devDependencies": {
+    "@types/node": "*",
+    "@types/react": "*",
+    "@types/react-dom": "*",
+    "autoprefixer": "*",
+    "eslint": "*",
+    "eslint-config-next": "*",
+    "postcss": "*",
+    "tailwindcss": "*",
+    "typescript": "*",
+    "vitest": ">=4.1.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "*"
+    },
+    "packageManager": {
+      "name": "pnpm",
+      "version": "*"
+    }
+  },
+  "engines": {
+    "node": "*",
+    "pnpm": "*"
+  },
+  "packageManager": "pnpm@*",
+  "modeline": "/* vim: set ft=json: */"
+}

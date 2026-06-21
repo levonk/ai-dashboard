@@ -1,21 +1,21 @@
 ---
 story_id: "02-003"
-story_title: "Pipeline Stage Collectors"
-story_name: "pipeline-collectors"
+story_title: "Proxy Data Collection"
+story_name: "proxy-collection"
 prd_name: "prd-multi-tenant-ai-analytics"
 prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 2
 parallel_id: 3
-branch: "feature/current/prd-multi-tenant-ai-analytics/story-02-003-pipeline-collectors"
+branch: "feature/current/prd-ai-analytics/story-02-003-proxy-collection"
 status: "todo"
 assignee: ""
 reviewer: ""
 dependencies: ["01-003"]
 parallel_safe: true
-modules: ["collectors", "pipeline"]
+modules: ["proxy", "collection"]
 priority: "MUST"
 risk_level: "medium"
-tags: ["feat", "collectors", "pipeline"]
+tags: ["feat", "proxy", "collection"]
 due: "2025-02-28"
 created_at: "2025-06-20"
 updated_at: "2025-06-20"
@@ -23,11 +23,30 @@ updated_at: "2025-06-20"
 
 ## Summary
 
-Implement specific collectors for different pipeline stages (Headroom, OmniRoute, Iron-Proxy) and a generic collector for custom stages. These collectors use the framework to gather analytics at each stage of the AI request pipeline.
+Implement data collection functionality in the proxy service to capture telemetry from AI requests and responses. The proxy collects comprehensive analytics including request metadata, timing metrics, provider information, model usage, and response data, then writes directly to the database in analytics mode.
 
 ## Sub-Tasks
 
-- [ ] Implement Headroom analytics collector — target: src/collectors/headroom.ts
+- [ ] Implement request metadata extraction (AI client, user, pipeline stage) — target: apps/proxy/src/collection/metadata.rs
+- [ ] Add timing metrics collection (request duration, provider latency) — target: apps/proxy/src/collection/timing.rs
+- [ ] Implement token counting and cost estimation — target: apps/proxy/src/collection/tokens.rs
+- [ ] Add error tracking and classification — target: apps/proxy/src/collection/errors.rs
+- [ ] Create database write operations for analytics mode — target: apps/proxy/src/collection/database.rs
+- [ ] Implement content hashing for request correlation — target: apps/proxy/src/collection/hashing.rs
+- [ ] Add multi-dimensional attribute collection — target: apps/proxy/src/collection/dimensions.rs
+- [ ] Create collection tests and validation — target: apps/proxy/tests/collection/
+
+## Relevant Files
+
+- `apps/proxy/src/collection/metadata.rs` — Request metadata extraction
+- `apps/proxy/src/collection/timing.rs` — Timing metrics collection
+- `apps/proxy/src/collection/tokens.rs` — Token counting and cost estimation
+- `apps/proxy/src/collection/errors.rs` — Error tracking and classification
+- `apps/proxy/src/collection/database.rs` — Database write operations
+- `apps/proxy/src/collection/hashing.rs` — Content hashing for correlation
+- `apps/proxy/src/collection/dimensions.rs` — Multi-dimensional attribute collection
+- `apps/proxy/tests/collection/` — Collection tests
+- `docs/collection-guide.md` — Data collection guide
 - [ ] Implement OmniRoute analytics collector — target: src/collectors/omniroute.ts
 - [ ] Implement Iron-Proxy analytics collector — target: src/collectors/iron-proxy.ts
 - [ ] Create generic custom stage collector — target: src/collectors/custom-stage.ts

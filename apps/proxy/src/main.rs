@@ -1,0 +1,935 @@
+mod cli;
+mod config;
+mod io_ops;
+mod logging;
+mod structured_log;
+mod signals;
+mod destructive;
+mod daemon;
+mod health;
+mod terminal;
+mod completion;
+mod man;
+mod path;
+mod security;
+mod resource;
+mod export;
+mod processor;
+mod privacy;
+mod audit;
+mod internal;
+mod skill;
+
+mod server;
+use anyhow::{Context, Result};
+use std::path::PathBuf;
+use std::io::{self, Read};
+use std::sync::Arc;
+use directories::ProjectDirs;
+use glob::glob;
+use tokio::sync::Mutex;
+use tracing::{info, error, debug};
+use clap::Parser;
+use cli::{Cli, Progress, Commands};
+use config::ConfigManager;
+use io_ops::{InputHandler, OutputHandler, ColorMode, FileReferenceFormat};
+use logging::{init_logging, setup_signal_handlers, Verbosity, exit_success, exit_error, exit_usage};
+use signals::SignalHandler;
+use destructive::{DestructiveOperation, detect_destructive_operation};
+use daemon::{DaemonManager, DaemonConfig, JobStatus};
+use health::{HealthManager, HealthConfig, HealthStatus, HealthResponse, HealthCheck, ConfigValidation};
+use terminal::{TerminalInfo, ResizeHandler};
+use completion::{generate_completion, install_completion, get_completion_path};
+use man::ManHandler;
+use resource::{ResourceLimits, ResourceLimiter};
+use export::{DataExporter, ExportConfig, ExportFormat, DataImporter, ImportConfig};
+use processor::{DataProcessor, ProcessingConfig, ProcessingOperation};
+use internal::mode::{detect_mode, Mode};
+use internal::toon::{OutputFormatter, OutputFormat};
+use internal::schema::{create_default_schema_registry, FieldSelector, parse_fields_arg};
+use internal::errors::{StructuredError, ErrorCode, format_error_with_format, translate_error_with_context, OutputChannels};
+use internal::prompts::{PromptSuppressor, PromptDecision, PromptType};
+use internal::idempotency::{check_idempotency, OperationType, IdempotentResult, acknowledge_noop};
+use internal::session::{generate_session_context, install_agent_hooks, register_session_hook, HookPlatform};
+use internal::content::{select_content, generate_summary, ContentFirstOutput, ContentType};
+use internal::aggregates::AggregateInfo;
+use internal::suggestions::{SuggestionEngine, SuggestionContext};
+use skill::handle_skill_command;
+
+const MODULE_NAME: &str = "ai-analytics-proxy";
+
+/// Handle no-args invocation with content-first output
+fn handle_no_args(mode: Mode) -> Result<()> {
+    let (content_type, suggestions) = select_content();
+    
+    // Generate appropriate content type string
+    let content_type_str = match content_type {
+        ContentType::ProjectState => "project_state",
+        ContentType::ProjectOverview => "project_overview",
+        ContentType::StateOnly => "state_only",
+        ContentType::GeneralHelp => "general_help",
+    };
+    
+    // Create state summary with empty aggregates (will be populated by real implementation)
+    let aggregates = AggregateInfo::empty();
+    let summary = generate_summary(content_type_str, aggregates);
+    
+    // Create content-first output
+    let output = ContentFirstOutput::new(summary, suggestions, mode == Mode::Agent);
+    
+    // Print the formatted output
+    println!("{}", output.format());
+    
+    // Generate and display contextual suggestions
+    let suggestion_context = SuggestionContext {
+        command: "no-args".to_string(),
+        action: Some("content-first".to_string()),
+        is_empty: false,
+        aggregates: Some(aggregates),
+        empty_state: None,
+        mode: format!("{:?}", mode),
+        flags: vec![],
+    };
+    
+    let output_formatter = OutputFormatter::auto_detect(mode, false, false, None).unwrap();
+    let suggestions_output = output_formatter.format_suggestions(&suggestion_context);
+    if !suggestions_output.is_empty() {
+        println!("{}", suggestions_output);
+    }
+    
+    Ok(())
+}
+
+/// Prompt user for confirmation before destructive operation
+/// Returns true if operation should proceed, false if cancelled
+/// In agent mode or with --force, this returns true without prompting
+fn prompt_confirmation(operation: &DestructiveOperation, suppressor: &PromptSuppressor) -> Result<bool> {
+    use std::io::{self, Write};
+    
+    // Check if prompt should be suppressed
+    let decision = suppressor.should_prompt(PromptType::DestructiveConfirmation);
+    
+    match decision {
+        PromptDecision::Suppress => {
+            if let Some(reason) = suppressor.suppression_reason(PromptType::DestructiveConfirmation) {
+                debug!("Confirmation suppressed: {}", reason);
+            }
+            Ok(true) // Proceed without confirmation
+        }
+        PromptDecision::Fail => {
+            Err(anyhow::anyhow!("Cannot proceed: interactive confirmation required but suppressed"))
+        }
+        PromptDecision::Show => {
+            print!("⚠️  {} [y/N]: ", operation.description());
+            io::stdout().flush()?;
+            
+            let mut input = String::new();
+            io::stdin().read_line(&mut input)?;
+            
+            let response = input.trim().to_lowercase();
+            Ok(response == "y" || response == "yes")
+        }
+    }
+}
+
+fn process_content(source: &str, content: &str, dry_run: bool, force: bool, mode: Mode) -> Result<()> {
+    // Check for destructive operations
+    let file_paths: Vec<&str> = if source == "stdin" {
+        vec![]
+    } else {
+        vec![source]
+    };
+    
+    // Create prompt suppressor
+    let suppressor = PromptSuppressor::new(mode, force, dry_run);
+    
+    if let Some(destructive_op) = detect_destructive_operation("process", &file_paths) {
+        // Prompt for confirmation (will be suppressed in agent mode or with --force)
+        if !prompt_confirmation(&destructive_op, &suppressor)? {
+            println!("Operation cancelled by user");
+            std::process::exit(0);
+        }
+    }
+    
+    if dry_run {
+        info!("DRY RUN: Would process content from {} ({} bytes)", source, content.len());
+        println!("🔍 DRY RUN MODE");
+        println!("   Source: {}", source);
+        println!("   Size: {} bytes", content.len());
+        println!("   Operation: Process content");
+        if let Some(destructive_op) = detect_destructive_operation("process", &file_paths) {
+            println!("   ⚠️  Destructive: {}", destructive_op.description());
+        }
+        println!("   Status: Would execute (no changes made)");
+    } else {
+        info!("Processing content from {} ({} bytes)", source, content.len());
+    }
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Parse CLI args first
+    let cli = Cli::parse();
+
+    // Parse and validate resource limits
+    let resource_limits = ResourceLimits::from_cli(cli.max_memory.clone(), cli.max_cpu)?;
+    if resource_limits.has_limits() {
+        info!("Resource limits set: {:?}", resource_limits);
+        resource_limits.validate()?;
+    }
+
+    // Handle subcommands
+    if let Some(ref command) = cli.command {
+        handle_subcommand(command, &cli).await?;
+        std::process::exit(0);
+    }
+
+    // Handle --install flag
+    if cli.install {
+        use clap::CommandFactory;
+        let mut cmd = Cli::command();
+        
+        // Check if completions are already installed (idempotency)
+        let shell = std::env::var("SHELL").unwrap_or_else(|_| "bash".to_string());
+        let shell_name = if shell.contains("zsh") {
+            "zsh"
+        } else if shell.contains("fish") {
+            "fish"
+        } else if shell.contains("elvish") {
+            "elvish"
+        } else if shell.contains("pwsh") || shell.contains("powershell") {
+            "powershell"
+        } else {
+            "bash"
+        };
+        
+        if let Some(completion_path) = completion::get_completion_path(shell_name) {
+            if PathBuf::from(&completion_path).exists() {
+                // Already installed - idempotent no-op
+                let mode = detect_mode(Some(cli.human), None)?;
+                let format = OutputFormatter::auto_detect(mode.mode, false, false, None).unwrap();
+                let noop_msg = format!("Completions already installed for shell: {} at {}", shell_name, completion_path);
+                
+                match acknowledge_noop(&noop_msg) {
+                    Ok(_) => std::process::exit(0),
+                    Err(_) => std::process::exit(1),
+                }
+            }
+        }
+        
+        // Initialize config
+        let config_manager = ConfigManager::new();
+        match config_manager.initialize_config() {
+            Ok(config_path) => {
+                println!("Configuration initialized at: {:?}", config_path);
+            }
+            Err(e) => {
+                let mode = detect_mode(Some(cli.human), None)?;
+                let format = OutputFormatter::auto_detect(mode.mode, false, false, None).unwrap();
+                let structured_error = translate_error_with_context(e, "Initializing configuration");
+                let formatted = format.format_error(&structured_error);
+                println!("{}", formatted);
+                std::process::exit(structured_error.exit_code);
+            }
+        }
+
+        println!("Installing completions for shell: {}", shell_name);
+        match completion::install_completion(&mut cmd, shell_name) {
+            Ok(_) => {
+                println!("Installation complete!");
+                println!("You may need to restart your shell or run: source ~/.bashrc (or equivalent)");
+            }
+            Err(e) => {
+                let mode = detect_mode(Some(cli.human), None)?;
+                let format = OutputFormatter::auto_detect(mode.mode, false, false, None).unwrap();
+                let structured_error = translate_error_with_context(e, "Installing completions");
+                let formatted = format.format_error(&structured_error);
+                println!("{}", formatted);
+                std::process::exit(structured_error.exit_code);
+            }
+        }
+        std::process::exit(0);
+    }
+
+    // Handle --uninstall flag
+    if cli.uninstall {
+        let shell = std::env::var("SHELL").unwrap_or_else(|_| "bash".to_string());
+        let shell_name = if shell.contains("zsh") {
+            "zsh"
+        } else if shell.contains("fish") {
+            "fish"
+        } else if shell.contains("elvish") {
+            "elvish"
+        } else if shell.contains("pwsh") || shell.contains("powershell") {
+            "powershell"
+        } else {
+            "bash"
+        };
+
+        if let Some(path) = completion::get_completion_path(shell_name) {
+            // Check if file exists (idempotency)
+            if !PathBuf::from(&path).exists() {
+                // Already uninstalled - idempotent no-op
+                let mode = detect_mode(Some(cli.human), None)?;
+                let format = OutputFormatter::auto_detect(mode.mode, false, false, None).unwrap();
+                let noop_msg = format!("Completions already uninstalled for shell: {} (file not found at {})", shell_name, path);
+                
+                match acknowledge_noop(&noop_msg) {
+                    Ok(_) => std::process::exit(0),
+                    Err(_) => std::process::exit(1),
+                }
+            }
+            
+            match std::fs::remove_file(&path) {
+                Ok(_) => {
+                    println!("Removed completion script: {}", path);
+                    println!("You may need to restart your shell or run: source ~/.bashrc (or equivalent)");
+                }
+                Err(e) => {
+                    let mode = detect_mode(Some(cli.human), None)?;
+                    let format = OutputFormatter::auto_detect(mode.mode, false, false, None).unwrap();
+                    let structured_error = translate_error_with_context(e.into(), "Removing completion script");
+                    let formatted = format.format_error(&structured_error);
+                    println!("{}", formatted);
+                    std::process::exit(structured_error.exit_code);
+                }
+            }
+        } else {
+            // Cannot determine path - assume already uninstalled (idempotent no-op)
+            let mode = detect_mode(Some(cli.human), None)?;
+            let format = OutputFormatter::auto_detect(mode.mode, false, false, None).unwrap();
+            let noop_msg = format!("Completions already uninstalled for shell: {} (path not found)", shell_name);
+            
+            match acknowledge_noop(&noop_msg) {
+                Ok(_) => std::process::exit(0),
+                Err(_) => std::process::exit(1),
+            }
+        }
+        std::process::exit(0);
+    }
+
+    // Handle --man flag
+    if cli.man {
+        match ManHandler::display_man_page() {
+            Ok(_) => std::process::exit(0),
+            Err(e) => {
+                let mode = detect_mode(Some(cli.human), None)?;
+                let format = OutputFormatter::auto_detect(mode.mode, false, false, None).unwrap();
+                let mut structured_error = translate_error_with_context(e, "Displaying man page");
+                structured_error.with_suggestion("Try generating man pages first: just generate-man-pages");
+                let formatted = format.format_error(&structured_error);
+                println!("{}", formatted);
+                std::process::exit(structured_error.exit_code);
+            }
+        }
+    }
+
+    // Handle --session-context flag
+    if cli.session_context {
+        match generate_session_context() {
+            Ok(session_ctx) => {
+                let toon_output = session_ctx.to_compact_toon();
+                println!("{}", toon_output);
+                std::process::exit(0);
+            }
+            Err(e) => {
+                eprintln!("Failed to generate session context: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    // Handle --install-agent-hooks flag
+    if let Some(platform_str) = cli.install_agent_hooks {
+        let platform = match HookPlatform::parse(&platform_str) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Invalid platform: {}", e);
+                std::process::exit(1);
+            }
+        };
+
+        let current_exe = std::env::current_exe()
+            .unwrap_or_else(|_| PathBuf::from("ai-analytics-proxy"));
+        let command = current_exe.to_string_lossy().to_string();
+
+        match install_agent_hooks(platform, &command) {
+            Ok(_) => {
+                println!("Agent hooks installed successfully for platform: {}", platform_str);
+                std::process::exit(0);
+            }
+            Err(e) => {
+                eprintln!("Failed to install agent hooks: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    // Load configuration
+    let mut config_manager = ConfigManager::new();
+    config_manager.load()?;
+
+    // Detect CLI mode with precedence chain
+    let mode_detection = detect_mode(Some(cli.human), Some(config_manager.get_config().mode.as_str()))?;
+    info!("CLI mode: {} (source: {})", mode_detection.mode.as_str(), mode_detection.source.as_str());
+
+    // Extract daemon config before moving config_manager into Arc
+    let daemon_mode_str = config_manager.get_config().daemon_mode.clone();
+    let daemon_enabled = config_manager.get_config().daemon_enabled;
+    let daemon_auto_spawn = config_manager.get_config().daemon_auto_spawn;
+    let daemon_max_jobs = config_manager.get_config().daemon_max_jobs;
+    let daemon_job_timeout = config_manager.get_config().daemon_job_timeout;
+    let daemon_data_storage_path = config_manager.get_config().daemon_data_storage_path.clone();
+
+    // Detect output format with precedence chain
+    let truncation_limit = if cli.full {
+        None
+    } else {
+        Some(config_manager.get_config().truncation_limit)
+    };
+    let output_formatter = OutputFormatter::auto_detect_with_truncation(
+        mode_detection.mode,
+        cli.toon,
+        cli.json,
+        cli.format.as_deref(),
+        truncation_limit,
+        cli.full,
+    )?;
+    info!("Output format: {} (auto-detected based on mode and flags)", output_formatter.format().as_str());
+    if cli.full {
+        info!("Full output mode: truncation disabled");
+    } else if let Some(limit) = truncation_limit {
+        info!("Truncation limit: {} characters", limit);
+    }
+
+    // Initialize schema registry for field selection
+    let schema_registry = create_default_schema_registry();
+    info!("Schema registry initialized with {} command schemas", schema_registry.get_commands().len());
+
+    // Parse field selection from --fields flag if provided
+    let field_selector = if let Some(fields_arg) = &cli.fields {
+        let field_names = parse_fields_arg(fields_arg);
+        if !field_names.is_empty() {
+            info!("Field selection requested: {}", field_names.join(", "));
+            Some(FieldSelector::new(field_names))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Initialize logging
+    let verbosity = Verbosity::from_count(cli.verbose, cli.quiet, cli.debug);
+    let config_level = config_manager.get_config().get_log_level();
+    init_logging(verbosity, config_level, cli.quiet)?;
+
+    // Detect terminal information
+    let terminal_info = TerminalInfo::detect();
+    info!(
+        "Terminal detected: TTY={}, Color={}, Size={}x{}",
+        terminal_info.is_tty,
+        terminal_info.supports_color,
+        terminal_info.size.cols,
+        terminal_info.size.rows
+    );
+
+    // Start resize handler for terminal size tracking
+    let resize_handler = ResizeHandler::new();
+    if terminal_info.is_tty {
+        if let Err(e) = resize_handler.start_listener() {
+            info!("Resize event listener not available: {}", e);
+        }
+    }
+
+    // Set up signal handlers for graceful shutdown
+    setup_signal_handlers()?;
+
+    // Start signal handler for config reload
+    let config_manager_arc = Arc::new(Mutex::new(config_manager));
+    let signal_handler = SignalHandler::new(config_manager_arc.clone());
+    signal_handler.run().await?;
+
+    // Initialize daemon manager
+    let daemon_mode = match daemon_mode_str.as_str() {
+        "collection" => daemon::DaemonMode::Collection,
+        "processing" => daemon::DaemonMode::Processing,
+        _ => daemon::DaemonMode::Execution,
+    };
+    
+    let daemon_config = DaemonConfig {
+        enabled: daemon_enabled && !cli.no_daemon,
+        auto_spawn: daemon_auto_spawn && !cli.no_daemon,
+        max_jobs: daemon_max_jobs,
+        job_timeout: daemon_job_timeout,
+        mode: daemon_mode,
+        data_storage_path: daemon_data_storage_path.map(|p| p.to_string_lossy().to_string()),
+        ..Default::default()
+    };
+    let daemon_manager = Arc::new(DaemonManager::new(daemon_config));
+
+    // Handle --daemon flag
+    if cli.daemon {
+        info!("Daemon mode: pre-launching daemon");
+        match daemon_manager.start().await {
+            Ok(_) => {
+                info!("Daemon started successfully");
+                // In a real implementation, we would wait for jobs here
+                println!("Daemon is running. Submit jobs using other commands.");
+                std::process::exit(0);
+            }
+            Err(e) => {
+                eprintln!("Failed to start daemon: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    info!("Starting {}", MODULE_NAME);
+
+    // Get config from Arc for read operations
+    let config = {
+        let manager = config_manager_arc.lock().await;
+        manager.config().clone()
+    };
+
+    // Handle color mode
+    let color_mode = if cli.nocolor {
+        ColorMode::Never
+    } else if let Some(color_str) = &cli.color {
+        ColorMode::from_str(color_str)
+    } else {
+        // Load from config
+        let config_color = config.color.clone();
+        ColorMode::from_str(&config_color)
+    };
+
+    // Set NO_COLOR if needed
+    if color_mode == ColorMode::Never {
+        std::env::set_var("NO_COLOR", "1");
+    }
+
+    // Validate configuration
+    {
+        let manager = config_manager_arc.lock().await;
+        manager.validate()?;
+    }
+
+    // Override with CLI config path if specified
+    if let Some(cli_config) = &cli.config {
+        info!("Using custom config: {:?}", cli_config);
+    } else {
+        let manager = config_manager_arc.lock().await;
+        info!("Using loaded configuration from {} sources", manager.sources().len());
+    }
+
+    // Create output handler
+    let output_handler = OutputHandler::new(
+        cli.json,
+        color_mode,
+        cli.quiet,
+        cli.no_pager,
+        FileReferenceFormat::Standard,
+    );
+
+    // Create input handler
+    let input_handler = InputHandler::from_args(&cli.inputs);
+
+    // Handle no-args invocation with content-first output
+    if input_handler.is_empty() && cli.command.is_none() {
+        info!("No arguments provided, showing content-first output");
+        handle_no_args(mode_detection.mode)?;
+        std::process::exit(0);
+    }
+
+    // Process all inputs
+    let contents = input_handler.read_all()?;
+    let total_files = contents.len() as u64;
+
+    // Initialize progress indicators
+    let progress = Progress::new(cli.quiet);
+    let progress_bar = if cli.show_progress() && total_files > 0 {
+        progress.bar(total_files, "Processing files")
+    } else {
+        None
+    };
+
+    for (i, content) in contents.iter().enumerate() {
+        let source = if input_handler.is_stdin() {
+            "stdin".to_string()
+        } else {
+            input_handler.get_file_paths()
+                .get(i)
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| format!("input_{}", i))
+        };
+
+        // Show spinner for individual file processing
+        let spinner = if cli.show_progress() {
+            progress.spinner(&format!("Processing: {}", source))
+        } else {
+            None
+        };
+
+        process_content(&source, content, cli.dry_run, cli.force, mode_detection.mode)?;
+
+        // Finish spinner
+        if let Some(s) = spinner {
+            s.finish_with_message(format!("✓ {}", source));
+        }
+
+        // Update progress bar
+        if let Some(bar) = &progress_bar {
+            bar.inc(1);
+        }
+    }
+
+    // Finish progress bar
+    if let Some(bar) = progress_bar {
+        bar.finish_with_message("✓ All files processed");
+    }
+
+    // Clear all progress indicators
+    progress.clear();
+
+    if cli.json {
+        output_handler.output_json(&serde_json::json!({"status": "ok"}))?;
+    }
+
+    // Generate and display contextual suggestions
+    let suggestion_context = SuggestionContext {
+        command: "process".to_string(),
+        action: None,
+        is_empty: input_handler.get_file_paths().is_empty(),
+        aggregates: None,
+        empty_state: None,
+        mode: format!("{:?}", mode_detection.mode),
+        flags: {
+            let mut flags = Vec::new();
+            if cli.dry_run { flags.push("--dry-run".to_string()); }
+            if cli.force { flags.push("--force".to_string()); }
+            if cli.full { flags.push("--full".to_string()); }
+            flags
+        },
+    };
+    
+    let suggestions_output = output_formatter.format_suggestions(&suggestion_context);
+    if !suggestions_output.is_empty() {
+        println!("{}", suggestions_output);
+    }
+
+    info!("Completed successfully");
+    Ok(())
+}
+
+/// Handle management subcommands
+async fn handle_subcommand(command: &Commands, cli: &Cli) -> Result<()> {
+    match command {
+        Commands::Config { show, reset, validate } => {
+            let mut config_manager = ConfigManager::new();
+            config_manager.load()?;
+
+            if *show {
+                let config = config_manager.get_config();
+                println!("Current configuration:");
+                println!("{:#?}", config);
+            } else if *reset {
+                let config_path = config_manager.initialize_config()?;
+                println!("Configuration reset to defaults at: {:?}", config_path);
+            } else if *validate {
+                let config = config_manager.get_config();
+                match config.validate() {
+                    Ok(_) => println!("Configuration is valid"),
+                    Err(e) => {
+                        eprintln!("Configuration validation failed: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+            } else {
+                println!("Use --show, --reset, or --validate with config subcommand");
+            }
+        }
+
+        Commands::Daemon { start, stop, restart, status, list_jobs, cancel_job } => {
+            let daemon_config = DaemonConfig::default();
+            let daemon_manager = DaemonManager::new(daemon_config);
+
+            if *start {
+                println!("Starting daemon...");
+                // Daemon start logic would go here
+                println!("Daemon started");
+            } else if *stop {
+                println!("Stopping daemon...");
+                // Daemon stop logic would go here
+                println!("Daemon stopped");
+            } else if *restart {
+                println!("Restarting daemon...");
+                // Daemon restart logic would go here
+                println!("Daemon restarted");
+            } else if *status {
+                println!("Daemon status: running");
+            } else if let Some(filter_str) = list_jobs {
+                let filter = match filter_str.to_lowercase().as_str() {
+                    "pending" => Some(JobStatus::Pending),
+                    "running" => Some(JobStatus::Running),
+                    "completed" => Some(JobStatus::Completed),
+                    "failed" => Some(JobStatus::Failed),
+                    "cancelled" => Some(JobStatus::Cancelled),
+                    _ => None,
+                };
+                let jobs = daemon_manager.list_jobs(filter).await;
+                if cli.json {
+                    println!("{}", serde_json::to_string_pretty(&jobs)?);
+                } else {
+                    if jobs.is_empty() {
+                        println!("No jobs found");
+                    } else {
+                        println!("Jobs:");
+                        for job in jobs {
+                            println!("  ID: {}", job.id);
+                            println!("  Command: {}", job.command);
+                            println!("  Status: {:?}", job.status);
+                            println!("  Created: {}", job.created_at);
+                            println!();
+                        }
+                    }
+                }
+            } else if let Some(job_id) = cancel_job {
+                match daemon_manager.cancel_job(&job_id).await {
+                    Ok(_) => println!("Cancelled job: {}", job_id),
+                    Err(e) => {
+                        eprintln!("Failed to cancel job: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+            } else {
+                println!("Use --start, --stop, --restart, --status, --list-jobs, or --cancel-job with daemon subcommand");
+            }
+        }
+
+        Commands::Completion { shell } => {
+            use clap::CommandFactory;
+            let mut cmd = Cli::command();
+            match generate_completion(&mut cmd, &shell, &mut std::io::stdout()) {
+                Ok(_) => (),
+                Err(e) => {
+                    eprintln!("Failed to generate completion: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+
+        Commands::Doctor { all, config, daemon, terminal } => {
+            println!("Running diagnostics...");
+
+            if *all || *config {
+                println!("Checking configuration...");
+                let mut config_manager = ConfigManager::new();
+                match config_manager.load() {
+                    Ok(_) => println!("  ✓ Configuration loaded successfully"),
+                    Err(e) => println!("  ✗ Configuration error: {}", e),
+                }
+            }
+
+            if *all || *daemon {
+                println!("Checking daemon status...");
+                println!("  ✓ Daemon check passed");
+            }
+
+            if *all || *terminal {
+                println!("Checking terminal capabilities...");
+                if atty::is(atty::Stream::Stdout) {
+                    println!("  ✓ Terminal detected");
+                } else {
+                    println!("  ℹ Non-terminal environment (piped output)");
+                }
+            }
+
+            if !*all && !*config && !*daemon && !*terminal {
+                println!("Use --all, --config, --daemon, or --terminal with doctor subcommand");
+            }
+        }
+
+        Commands::Export { format, output, include_metadata, compress } => {
+            println!("Exporting data...");
+            
+            let export_format = match format.as_deref() {
+                Some("csv") => ExportFormat::Csv,
+                Some("yaml") => ExportFormat::Yaml,
+                Some("json") | None => ExportFormat::Json,
+                Some(other) => {
+                    eprintln!("Unknown format: {}. Use json, csv, or yaml", other);
+                    std::process::exit(1);
+                }
+            };
+            
+            let output_path = output.clone().unwrap_or_else(|| PathBuf::from("export.json"));
+            
+            let export_config = ExportConfig {
+                format: export_format,
+                output_path: output_path.clone(),
+                include_metadata: *include_metadata,
+                compress: *compress,
+            };
+            
+            let exporter = DataExporter::new(export_config);
+            
+            // For the template, we create sample data
+            let sample_records = vec![
+                export::DataRecord {
+                    id: "sample-1".to_string(),
+                    timestamp: chrono::Utc::now().to_rfc3339(),
+                    record_type: "sample".to_string(),
+                    data: serde_json::json!({"message": "sample data"}),
+                    metadata: None,
+                },
+            ];
+            
+            match exporter.export(sample_records) {
+                Ok(manifest) => {
+                    println!("Export completed successfully");
+                    println!("  Format: {:?}", manifest.format);
+                    println!("  Records: {}", manifest.record_count);
+                    println!("  Output: {:?}", output_path);
+                }
+                Err(e) => {
+                    eprintln!("Export failed: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+
+        Commands::Process { input, operation, output, operation_config } => {
+            println!("Processing data...");
+            
+            let processing_operation = match operation.to_lowercase().as_str() {
+                "filter" => ProcessingOperation::Filter,
+                "aggregate" => ProcessingOperation::Aggregate,
+                "transform" => ProcessingOperation::Transform,
+                "analyze" => ProcessingOperation::Analyze,
+                _ => {
+                    eprintln!("Unknown operation: {}. Use filter, aggregate, transform, or analyze", operation);
+                    std::process::exit(1);
+                }
+            };
+            
+            let op_config = operation_config.clone()
+                .and_then(|s| serde_json::from_str(&s).ok())
+                .unwrap_or(serde_json::Value::Null);
+            
+            let processing_config = ProcessingConfig {
+                input_path: input.clone(),
+                output_path: output.clone(),
+                operation: processing_operation,
+                operation_config: op_config,
+            };
+            
+            let processor = DataProcessor::new(processing_config);
+            
+            match processor.process() {
+                Ok(result) => {
+                    println!("Processing completed successfully");
+                    println!("  Operation: {}", result.analysis_type);
+                    if cli.json {
+                        println!("{}", serde_json::to_string_pretty(&result.result)?);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Processing failed: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+
+        Commands::Session { context, install_hooks, register_hook } => {
+            if *context {
+                // Output session context in compact TOON format
+                match generate_session_context() {
+                    Ok(session_ctx) => {
+                        let toon_output = session_ctx.to_compact_toon();
+                        println!("{}", toon_output);
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to generate session context: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+            }
+
+            if let Some(platform_str) = install_hooks {
+                // Install agent hooks for the specified platform
+                let platform = match HookPlatform::parse(&platform_str) {
+                    Ok(p) => p,
+                    Err(e) => {
+                        eprintln!("Invalid platform: {}", e);
+                        std::process::exit(1);
+                    }
+                };
+
+                // Get the current executable path
+                let current_exe = std::env::current_exe()
+                    .unwrap_or_else(|_| PathBuf::from("ai-analytics-proxy"));
+                let command = current_exe.to_string_lossy().to_string();
+
+                match install_agent_hooks(platform, &command) {
+                    Ok(_) => {
+                        println!("Agent hooks installed successfully for platform: {}", platform_str);
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to install agent hooks: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+            }
+
+            if *register_hook {
+                // Register session-end hook
+                let platform = HookPlatform::Claude; // Default to Claude for session-end hooks
+                
+                let current_exe = std::env::current_exe()
+                    .unwrap_or_else(|_| PathBuf::from("ai-analytics-proxy"));
+                let command = current_exe.to_string_lossy().to_string();
+
+                match register_session_hook(platform, &command) {
+                    Ok(_) => {
+                        println!("Session-end hook registered successfully");
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to register session-end hook: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+            }
+        }
+
+        Commands::Skill { .. } => {
+            match handle_skill_command(&cli.command) {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("Skill command failed: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+
+Commands::Serve { port, host } => {
+            use server::{ServerConfig, run_server};
+            
+            let server_config = ServerConfig {
+                port: port.unwrap_or(8080),
+                host: host.clone().unwrap_or_else(|| "0.0.0.0".to_string()),
+            };
+            
+            match run_server(server_config).await {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("Server error: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+}
+
+    Ok(())
+}

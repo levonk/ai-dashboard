@@ -1,0 +1,23 @@
+//! Internal modules for CLI implementation
+//! 
+//! This directory contains internal implementation details that are
+//! not part of the public API but are shared across the CLI.
+
+pub mod mode;
+pub mod toon;
+pub mod schema;
+pub mod truncation;
+pub mod aggregates;
+pub mod emptystate;
+pub mod errors;
+pub mod idempotency;
+pub mod prompts;
+pub mod session;
+pub mod skill;
+pub mod content;
+pub mod suggestions;
+
+// Re-export commonly used types
+pub use mode::{Mode, ModeDetection, ModeSource, detect_mode};
+pub use content::{ContentSelector, ContentContext, select_content, StateSummary, generate_summary, ContentFirstOutput};
+pub use suggestions::{SuggestionEngine, SuggestionContext, Suggestion, SuggestionRank};

@@ -1,0 +1,606 @@
+//! TOON (Token-Oriented Object Notation) format support
+//! 
+//! This module provides encoding and decoding for TOON format, which offers ~40% token savings
+//! over equivalent JSON while remaining readable by agents. TOON is a line-oriented, 
+//! indentation-based notation defined by the TOON specification v3.3.
+//! 
+//! ## Example
+//! 
+//! ```rust
+//! use mytool::internal::toon::{ToonValue, to_string, from_str};
+//! 
+//! // Create a TOON value
+//! let value = ToonValue::object({
+//!     let mut map = std::collections::BTreeMap::new();
+//!     map.insert("name".to_string(), ToonValue::string("Alice"));
+//!     map.insert("age".to_string(), ToonValue::number("30"));
+//!     map
+//! });
+//! 
+//! // Encode to TOON format
+//! let toon_string = to_string(&value).unwrap();
+//! 
+//! // Decode back from TOON format
+//! let decoded = from_str(&toon_string).unwrap();
+//! ```
+
+pub mod types;
+pub mod encoder;
+pub mod decoder;
+
+pub use types::{ToonValue, ToonEncodeOptions, ToonDecodeOptions, ToonEncodeError, ToonDecodeError};
+pub use encoder::{ToonEncoder, to_string, to_string_with_options};
+pub use decoder::{ToonDecoder, from_str, from_str_with_options};
+
+use crate::internal::schema::{OutputSchema, FieldSelector, apply_schema_transforms};
+use crate::internal::truncation::{Truncator, TruncationMetadata};
+use crate::internal::aggregates::{AggregateInfo, CountFormatter};
+use crate::internal::emptystate::{EmptyStateFormatter, EmptyStateContext};
+use crate::internal::errors::{StructuredError, format_error_with_format};
+use crate::internal::suggestions::{SuggestionEngine, SuggestionContext};
+
+/// Output format options
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OutputFormat {
+    /// TOON format (token-efficient for agents)
+    Toon,
+    /// JSON format (standard machine-readable)
+    Json,
+    /// Human-readable format (optimized for humans)
+    Human,
+}
+
+impl OutputFormat {
+    /// Parse format from string
+    pub fn parse(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().as_str() {
+            "toon" => Ok(OutputFormat::Toon),
+            "json" => Ok(OutputFormat::Json),
+            "human" => Ok(OutputFormat::Human),
+            _ => Err(format!("Invalid format: {}. Valid options: toon, json, human", s)),
+        }
+    }
+
+    /// Convert to string
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            OutputFormat::Toon => "toon",
+            OutputFormat::Json => "json",
+            OutputFormat::Human => "human",
+        }
+    }
+}
+
+/// Output formatter
+pub struct OutputFormatter {
+    format: OutputFormat,
+    truncator: Option<Truncator>,
+    aggregates: Option<AggregateInfo>,
+}
+
+impl OutputFormatter {
+    /// Create a new output formatter with the specified format
+    pub fn new(format: OutputFormat) -> Self {
+        Self { 
+            format,
+            truncator: None,
+            aggregates: None,
+        }
+    }
+
+    /// Create a new output formatter with truncation support
+    pub fn with_truncation(format: OutputFormat, truncation_limit: usize) -> Self {
+        Self {
+            format,
+            truncator: Some(Truncator::new(truncation_limit)),
+            aggregates: None,
+        }
+    }
+
+    /// Create a new output formatter without truncation (full output)
+    pub fn without_truncation(format: OutputFormat) -> Self {
+        Self {
+            format,
+            truncator: None,
+            aggregates: None,
+        }
+    }
+
+    /// Create a new output formatter with aggregate information
+    pub fn with_aggregates(format: OutputFormat, aggregates: AggregateInfo) -> Self {
+        Self {
+            format,
+            truncator: None,
+            aggregates: Some(aggregates),
+        }
+    }
+
+    /// Create a new output formatter with both truncation and aggregates
+    pub fn with_truncation_and_aggregates(format: OutputFormat, truncation_limit: usize, aggregates: AggregateInfo) -> Self {
+        Self {
+            format,
+            truncator: Some(Truncator::new(truncation_limit)),
+            aggregates: Some(aggregates),
+        }
+    }
+
+    /// Auto-detect format based on mode and CLI flags
+    pub fn auto_detect(mode: crate::internal::mode::Mode, toon_flag: bool, json_flag: bool, format_override: Option<&str>) -> anyhow::Result<Self> {
+        Self::auto_detect_with_truncation(mode, toon_flag, json_flag, format_override, None, false)
+    }
+
+    /// Auto-detect format with truncation configuration
+    pub fn auto_detect_with_truncation(
+        mode: crate::internal::mode::Mode,
+        toon_flag: bool,
+        json_flag: bool,
+        format_override: Option<&str>,
+        truncation_limit: Option<usize>,
+        full_output: bool,
+    ) -> anyhow::Result<Self> {
+        // Priority: explicit format override > explicit flags > mode-based default
+        if let Some(format_str) = format_override {
+            let format = OutputFormat::parse(format_str)
+                .map_err(|e| anyhow::anyhow!("{}", e))?;
+            return Ok(Self::new_with_truncation_config(format, truncation_limit, full_output));
+        }
+
+        if toon_flag {
+            return Ok(Self::new_with_truncation_config(OutputFormat::Toon, truncation_limit, full_output));
+        }
+
+        if json_flag {
+            return Ok(Self::new_with_truncation_config(OutputFormat::Json, truncation_limit, full_output));
+        }
+
+        // Mode-based default
+        let format = match mode {
+            crate::internal::mode::Mode::Agent => OutputFormat::Toon,
+            crate::internal::mode::Mode::Human => OutputFormat::Human,
+        };
+
+        Ok(Self::new_with_truncation_config(format, truncation_limit, full_output))
+    }
+
+    /// Create formatter with truncation configuration
+    fn new_with_truncation_config(format: OutputFormat, truncation_limit: Option<usize>, full_output: bool) -> Self {
+        if full_output {
+            Self::without_truncation(format)
+        } else if let Some(limit) = truncation_limit {
+            Self::with_truncation(format, limit)
+        } else {
+            Self::new(format)
+        }
+    }
+
+    /// Set aggregate information on the formatter
+    pub fn set_aggregates(&mut self, aggregates: AggregateInfo) {
+        self.aggregates = Some(aggregates);
+    }
+
+    /// Get aggregate information
+    pub fn aggregates(&self) -> Option<&AggregateInfo> {
+        self.aggregates.as_ref()
+    }
+
+    /// Format a ToonValue to the configured output format
+    pub fn format_value(&self, value: &ToonValue) -> anyhow::Result<String> {
+        self.format_value_with_schema(value, None, None, false)
+    }
+
+    /// Format a ToonValue with optional schema application
+    pub fn format_value_with_schema(
+        &self,
+        value: &ToonValue,
+        schema: Option<&OutputSchema>,
+        field_selector: Option<&FieldSelector>,
+        apply_limit: bool,
+    ) -> anyhow::Result<String> {
+        // Apply schema transformations if schema is provided
+        let mut json_value: serde_json::Value = serde_json::to_value(value)
+            .map_err(|e| anyhow::anyhow!("JSON conversion error: {}", e))?;
+
+        if let Some(schema) = schema {
+            apply_schema_transforms(schema, &mut json_value, field_selector, apply_limit)
+                .map_err(|e| anyhow::anyhow!("Schema application error: {}", e))?;
+        }
+
+        // Add aggregate information if available
+        if let Some(aggregates) = &self.aggregates {
+            self.apply_aggregates(&mut json_value, aggregates)?;
+        }
+
+        // Format the transformed value
+        match self.format {
+            OutputFormat::Toon => {
+                let toon_value: ToonValue = serde_json::from_value(json_value)
+                    .map_err(|e| anyhow::anyhow!("JSON to TOON conversion error: {}", e))?;
+                to_string(&toon_value).map_err(|e| anyhow::anyhow!("TOON encoding error: {}", e))
+            }
+            OutputFormat::Json => {
+                serde_json::to_string_pretty(&json_value)
+                    .map_err(|e| anyhow::anyhow!("JSON encoding error: {}", e))
+            }
+            OutputFormat::Human => {
+                // For human format, use JSON pretty-printed for now
+                // TODO: Implement proper human-readable formatting
+                serde_json::to_string_pretty(&json_value)
+                    .map_err(|e| anyhow::anyhow!("JSON encoding error: {}", e))
+            }
+        }
+    }
+
+    /// Apply aggregate information to a JSON value
+    fn apply_aggregates(&self, json_value: &mut serde_json::Value, aggregates: &AggregateInfo) -> anyhow::Result<()> {
+        if let Some(count) = &aggregates.count {
+            if let Some(obj) = json_value.as_object_mut() {
+                obj.insert("_count".to_string(), serde_json::json!({
+                    "current": count.current,
+                    "total": count.total,
+                    "formatted": CountFormatter::format(count)
+                }));
+            }
+        }
+
+        if let Some(derived) = &aggregates.derived {
+            if let Some(obj) = json_value.as_object_mut() {
+                let mut derived_obj = serde_json::Map::new();
+                for (name, field) in &derived.fields {
+                    derived_obj.insert(name.clone(), serde_json::json!({
+                        "formatted": field.format()
+                    }));
+                }
+                obj.insert("_derived".to_string(), serde_json::Value::Object(derived_obj));
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Get the current output format
+    pub fn format(&self) -> OutputFormat {
+        self.format
+    }
+
+    /// Format a structured error to the configured output format
+    pub fn format_error(&self, error: &StructuredError) -> String {
+        format_error_with_format(error, self.format).unwrap_or_else(|_e| {
+            // Fallback to simple error message if formatting fails
+            format!("{}: {}", error.code_str(), error.message)
+        })
+    }
+
+    /// Format an empty state message
+    pub fn format_empty_state(&self, context: &EmptyStateContext) -> String {
+        let formatter = EmptyStateFormatter::new();
+        let message = formatter.format(context);
+        
+        match self.format {
+            OutputFormat::Toon => {
+                // TOON format for empty state
+                let mut toon_obj = std::collections::BTreeMap::new();
+                toon_obj.insert("empty".to_string(), ToonValue::bool(true));
+                toon_obj.insert("message".to_string(), ToonValue::string(&message.message));
+                toon_obj.insert("context".to_string(), ToonValue::string(&message.context));
+                if let Some(suggestion) = &message.suggestion {
+                    toon_obj.insert("suggestion".to_string(), ToonValue::string(suggestion));
+                }
+                to_string(&ToonValue::Object(toon_obj)).unwrap_or_else(|_| message.message.clone())
+            }
+            OutputFormat::Json => {
+                // JSON format for empty state
+                let mut json_obj = serde_json::Map::new();
+                json_obj.insert("empty".to_string(), serde_json::Value::Bool(true));
+                json_obj.insert("message".to_string(), serde_json::Value::String(message.message.clone()));
+                json_obj.insert("context".to_string(), serde_json::Value::String(message.context));
+                if let Some(suggestion) = message.suggestion {
+                    json_obj.insert("suggestion".to_string(), serde_json::Value::String(suggestion));
+                }
+                serde_json::to_string_pretty(&serde_json::Value::Object(json_obj))
+                    .unwrap_or(message.message)
+            }
+            OutputFormat::Human => {
+                // Human format for empty state
+                formatter.format_as_string(context)
+            }
+        }
+    }
+
+    /// Format suggestions as a structured help array
+    pub fn format_suggestions(&self, context: &SuggestionContext) -> String {
+        let engine = SuggestionEngine::new();
+        let suggestions = engine.generate(context);
+        
+        match self.format {
+            OutputFormat::Toon => {
+                // TOON format for suggestions as help[] array
+                let help_array: Vec<ToonValue> = suggestions.iter().map(|s| {
+                    let mut help_obj = std::collections::BTreeMap::new();
+                    help_obj.insert("command".to_string(), ToonValue::string(&s.command));
+                    help_obj.insert("description".to_string(), ToonValue::string(&s.description));
+                    ToonValue::Object(help_obj)
+                }).collect();
+                
+                let mut toon_obj = std::collections::BTreeMap::new();
+                toon_obj.insert("help".to_string(), ToonValue::array(help_array));
+                to_string(&ToonValue::Object(toon_obj)).unwrap_or_default()
+            }
+            OutputFormat::Json => {
+                // JSON format for suggestions as help[] array
+                let help_array: Vec<serde_json::Value> = suggestions.iter().map(|s| {
+                    let mut help_obj = serde_json::Map::new();
+                    help_obj.insert("command".to_string(), serde_json::Value::String(s.command.clone()));
+                    help_obj.insert("description".to_string(), serde_json::Value::String(s.description.clone()));
+                    serde_json::Value::Object(help_obj)
+                }).collect();
+                
+                let mut json_obj = serde_json::Map::new();
+                json_obj.insert("help".to_string(), serde_json::Value::Array(help_array));
+                serde_json::to_string_pretty(&serde_json::Value::Object(json_obj)).unwrap_or_default()
+            }
+            OutputFormat::Human => {
+                // Human format for suggestions
+                if suggestions.is_empty() {
+                    String::new()
+                } else {
+                    let mut output = String::from("\nSuggested next steps:\n");
+                    for (i, suggestion) in suggestions.iter().enumerate() {
+                        output.push_str(&format!("  {}. {} - {}\n", i + 1, suggestion.command, suggestion.description));
+                    }
+                    output
+                }
+            }
+        }
+    }
+
+    /// Apply truncation to a ToonValue if truncator is configured
+    pub fn apply_truncation(&self, value: &ToonValue) -> (ToonValue, Option<TruncationMetadata>) {
+        if let Some(truncator) = &self.truncator {
+            self.truncate_value(value, truncator)
+        } else {
+            (value.clone(), None)
+        }
+    }
+
+    /// Recursively truncate string values in a ToonValue
+    fn truncate_value(&self, value: &ToonValue, truncator: &Truncator) -> (ToonValue, Option<TruncationMetadata>) {
+        match value {
+            ToonValue::String(s) => {
+                let (truncated, metadata) = truncator.truncate(s);
+                (ToonValue::String(truncated.into_owned()), Some(metadata))
+            }
+            ToonValue::Array(arr) => {
+                let mut new_arr = Vec::new();
+                let mut metadata = None;
+                for item in arr {
+                    let (truncated_item, item_metadata) = self.truncate_value(item, truncator);
+                    new_arr.push(truncated_item);
+                    if item_metadata.is_some() {
+                        metadata = item_metadata;
+                    }
+                }
+                (ToonValue::Array(new_arr), metadata)
+            }
+            ToonValue::Object(obj) => {
+                let mut new_obj = std::collections::BTreeMap::new();
+                let mut metadata = None;
+                for (key, val) in obj {
+                    let (truncated_val, val_metadata) = self.truncate_value(val, truncator);
+                    new_obj.insert(key.clone(), truncated_val);
+                    if val_metadata.is_some() {
+                        metadata = val_metadata;
+                    }
+                }
+                (ToonValue::Object(new_obj), metadata)
+            }
+            _ => (value.clone(), None),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::internal::Mode;
+    use crate::internal::aggregates::{CountInfo, DerivedStatus, DerivedField, AggregateInfo};
+    use crate::internal::emptystate::EmptyStateContext;
+
+    #[test]
+    fn test_output_format_from_str() {
+        assert_eq!(OutputFormat::from_str("toon").unwrap(), OutputFormat::Toon);
+        assert_eq!(OutputFormat::from_str("json").unwrap(), OutputFormat::Json);
+        assert_eq!(OutputFormat::from_str("human").unwrap(), OutputFormat::Human);
+        assert!(OutputFormat::from_str("invalid").is_err());
+    }
+
+    #[test]
+    fn test_output_format_as_str() {
+        assert_eq!(OutputFormat::Toon.as_str(), "toon");
+        assert_eq!(OutputFormat::Json.as_str(), "json");
+        assert_eq!(OutputFormat::Human.as_str(), "human");
+    }
+
+    #[test]
+    fn test_auto_detect_format_override() {
+        let formatter = OutputFormatter::auto_detect(
+            Mode::Agent,
+            false,
+            false,
+            Some("json")
+        ).unwrap();
+        assert_eq!(formatter.format(), OutputFormat::Json);
+    }
+
+    #[test]
+    fn test_auto_detect_toon_flag() {
+        let formatter = OutputFormatter::auto_detect(
+            Mode::Human,
+            true,
+            false,
+            None
+        ).unwrap();
+        assert_eq!(formatter.format(), OutputFormat::Toon);
+    }
+
+    #[test]
+    fn test_auto_detect_json_flag() {
+        let formatter = OutputFormatter::auto_detect(
+            Mode::Agent,
+            false,
+            true,
+            None
+        ).unwrap();
+        assert_eq!(formatter.format(), OutputFormat::Json);
+    }
+
+    #[test]
+    fn test_auto_detect_mode_agent() {
+        let formatter = OutputFormatter::auto_detect(
+            Mode::Agent,
+            false,
+            false,
+            None
+        ).unwrap();
+        assert_eq!(formatter.format(), OutputFormat::Toon);
+    }
+
+    #[test]
+    fn test_auto_detect_mode_human() {
+        let formatter = OutputFormatter::auto_detect(
+            Mode::Human,
+            false,
+            false,
+            None
+        ).unwrap();
+        assert_eq!(formatter.format(), OutputFormat::Human);
+    }
+
+    #[test]
+    fn test_format_toon() {
+        let formatter = OutputFormatter::new(OutputFormat::Toon);
+        let value = ToonValue::string("hello");
+        let result = formatter.format_value(&value).unwrap();
+        assert_eq!(result, "hello");
+    }
+
+    #[test]
+    fn test_format_json() {
+        let formatter = OutputFormatter::new(OutputFormat::Json);
+        let value = ToonValue::string("hello");
+        let result = formatter.format_value(&value).unwrap();
+        assert_eq!(result, "\"hello\"");
+    }
+
+    #[test]
+    fn test_formatter_with_aggregates() {
+        let count = CountInfo::new(30, 847);
+        let aggregates = AggregateInfo::with_count(count);
+        let formatter = OutputFormatter::with_aggregates(OutputFormat::Toon, aggregates);
+        
+        assert!(formatter.aggregates().is_some());
+        assert_eq!(formatter.aggregates().as_ref().unwrap().count.as_ref().unwrap().current, 30);
+    }
+
+    #[test]
+    fn test_formatter_set_aggregates() {
+        let mut formatter = OutputFormatter::new(OutputFormat::Toon);
+        assert!(formatter.aggregates().is_none());
+        
+        let count = CountInfo::new(30, 847);
+        let aggregates = AggregateInfo::with_count(count);
+        formatter.set_aggregates(aggregates);
+        
+        assert!(formatter.aggregates().is_some());
+    }
+
+    #[test]
+    fn test_format_value_with_count_aggregate() {
+        let mut formatter = OutputFormatter::new(OutputFormat::Json);
+        let count = CountInfo::new(30, 847);
+        let aggregates = AggregateInfo::with_count(count);
+        formatter.set_aggregates(aggregates);
+        
+        let value = ToonValue::object({
+            let mut map = std::collections::BTreeMap::new();
+            map.insert("name".to_string(), ToonValue::string("test"));
+            map
+        });
+        
+        let result = formatter.format_value(&value).unwrap();
+        assert!(result.contains("\"_count\""));
+        assert!(result.contains("\"current\": 30"));
+        assert!(result.contains("\"total\": 847"));
+    }
+
+    #[test]
+    fn test_format_value_with_derived_aggregate() {
+        let mut formatter = OutputFormatter::new(OutputFormat::Json);
+        let mut derived = DerivedStatus::new();
+        derived.add_field("comments".to_string(), DerivedField::count("Comments", 7));
+        let aggregates = AggregateInfo::with_derived(derived);
+        formatter.set_aggregates(aggregates);
+        
+        let value = ToonValue::object({
+            let mut map = std::collections::BTreeMap::new();
+            map.insert("name".to_string(), ToonValue::string("test"));
+            map
+        });
+        
+        let result = formatter.format_value(&value).unwrap();
+        assert!(result.contains("\"_derived\""));
+        assert!(result.contains("\"comments\""));
+        assert!(result.contains("\"formatted\": \"Comments: 7\""));
+    }
+
+    #[test]
+    fn test_format_value_with_both_aggregates() {
+        let mut formatter = OutputFormatter::new(OutputFormat::Json);
+        let count = CountInfo::new(30, 847);
+        let mut derived = DerivedStatus::new();
+        derived.add_field("comments".to_string(), DerivedField::count("Comments", 7));
+        let aggregates = AggregateInfo::with_both(count, derived);
+        formatter.set_aggregates(aggregates);
+        
+        let value = ToonValue::object({
+            let mut map = std::collections::BTreeMap::new();
+            map.insert("name".to_string(), ToonValue::string("test"));
+            map
+        });
+        
+        let result = formatter.format_value(&value).unwrap();
+        assert!(result.contains("\"_count\""));
+        assert!(result.contains("\"_derived\""));
+    }
+
+    #[test]
+    fn test_format_empty_state_toon() {
+        let formatter = OutputFormatter::new(OutputFormat::Toon);
+        let context = EmptyStateContext::new("list").with_filter("status", "active");
+        
+        let result = formatter.format_empty_state(&context);
+        assert!(result.contains("empty"));
+        assert!(result.contains("true"));
+        assert!(result.contains("No results found"));
+    }
+
+    #[test]
+    fn test_format_empty_state_json() {
+        let formatter = OutputFormatter::new(OutputFormat::Json);
+        let context = EmptyStateContext::new("list").with_filter("status", "active");
+        
+        let result = formatter.format_empty_state(&context);
+        assert!(result.contains("\"empty\""));
+        assert!(result.contains("true"));
+        assert!(result.contains("No results found"));
+    }
+
+    #[test]
+    fn test_format_empty_state_human() {
+        let formatter = OutputFormatter::new(OutputFormat::Human);
+        let context = EmptyStateContext::new("list").with_filter("status", "active");
+        
+        let result = formatter.format_empty_state(&context);
+        assert!(result.contains("No results found"));
+        assert!(result.contains("Query executed successfully"));
+    }
+}
