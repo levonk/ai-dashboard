@@ -7,7 +7,7 @@ prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 2
 parallel_id: 2
 branch: "feature/current/prd-multi-tenant-ai-analytics/story-02-002-hashing-token-estimation"
-status: "todo"
+status: "in-progress"
 assignee: ""
 reviewer: ""
 dependencies: ["01-002"]
@@ -27,43 +27,43 @@ Implement content hashing for request correlation across pipeline stages and acc
 
 ## Sub-Tasks
 
-- [ ] Implement content hashing algorithm for request fingerprinting — target: src/utils/hashing.ts
-- [ ] Create token estimation for text/chat models — target: src/utils/tokens/text.ts
-- [ ] Implement token estimation for image models — target: src/utils/tokens/image.ts
-- [ ] Add token estimation for audio/video models — target: src/utils/tokens/media.ts
-- [ ] Create model-specific token estimation registry — target: src/utils/tokens/registry.ts
-- [ ] Implement timing utilities for high-precision metrics — target: src/utils/timing.ts
-- [ ] Add input type detection and classification — target: src/utils/input-type.ts
-- [ ] Create utility test suite with model-specific test cases — target: test/utils/
+- [x] Implement content hashing algorithm for request fingerprinting — target: src/hashing.rs
+- [~] Create token estimation for text/chat models — target: src/utils/tokens/text.rs
+- [x] Implement token estimation for image models — target: src/image_tokens.rs
+- [x] Add token estimation for audio/video models — target: src/media_tokens.rs
+- [x] Create model-specific token estimation registry — target: src/token_registry.rs
+- [x] Implement timing utilities for high-precision metrics — target: src/timing.rs
+- [x] Add input type detection and classification — target: src/input_type.rs
+- [x] Create utility test suite with model-specific test cases — target: tests/utils_integration_test.rs
 
 ## Relevant Files
 
-- `src/utils/hashing.ts` — Content hashing for request correlation
-- `src/utils/tokens/text.ts` — Text token estimation
-- `src/utils/tokens/image.ts` — Image token estimation
-- `src/utils/tokens/media.ts` — Audio/video token estimation
-- `src/utils/tokens/registry.ts` — Model-specific token registry
-- `src/utils/timing.ts` — High-precision timing utilities
-- `src/utils/input-type.ts` — Input type detection
-- `test/utils/` — Utility tests
+- `src/hashing.rs` — Content hashing for request correlation
+- `src/tokens.rs` — Text token estimation and model-specific token counting
+- `src/image_tokens.rs` — Image token estimation
+- `src/media_tokens.rs` — Audio/video token estimation
+- `src/token_registry.rs` — Model-specific token registry
+- `src/timing.rs` — High-precision timing utilities
+- `src/input_type.rs` — Input type detection
+- `tests/utils/` — Utility tests
 - `docs/token-estimation.md` — Token estimation documentation
 
 ## Acceptance Criteria
 
-- [ ] Content hashing produces consistent fingerprints for identical requests
-- [ ] Token estimation is accurate for major model providers (Anthropic, OpenAI, Google)
-- [ ] Token estimation supports different input types (text, image, audio, video)
-- [ ] Model registry allows easy addition of new models
-- [ ] Timing utilities provide microsecond precision
-- [ ] Input type detection correctly classifies different content types
-- [ ] Test suite covers major models and edge cases
-- [ ] Documentation explains token estimation methodology
+- [x] Content hashing produces consistent fingerprints for identical requests
+- [x] Token estimation is accurate for major model providers (Anthropic, OpenAI, Google)
+- [x] Token estimation supports different input types (text, image, audio, video)
+- [x] Model registry allows easy addition of new models
+- [x] Timing utilities provide microsecond precision
+- [x] Input type detection correctly classifies different content types
+- [x] Test suite covers major models and edge cases
+- [x] Documentation explains token estimation methodology
 
 ## Test Plan
 
-- Unit: `npm test src/utils/hashing.ts`
-- Unit: `npm test src/utils/tokens/`
-- Unit: `npm test src/utils/timing.ts`
+- Unit: `cargo test hashing`
+- Unit: `cargo test tokens`
+- Unit: `cargo test timing`
 - Accuracy: Compare token estimates against actual API usage
 - Performance: Benchmark hashing and token estimation performance
 

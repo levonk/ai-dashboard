@@ -1,16 +1,16 @@
 ---
-story_id: "04-001"
+story_id: "05-001"
 story_title: "Dashboard UI Framework"
 story_name: "dashboard-framework"
 prd_name: "prd-multi-tenant-ai-analytics"
 prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
-phase: 4
+phase: 5
 parallel_id: 1
-branch: "feature/current/prd-multi-tenant-ai-analytics/story-04-001-dashboard-framework"
+branch: "feature/current/prd-ai-analytics/story-05-001-dashboard-framework"
 status: "todo"
 assignee: ""
 reviewer: ""
-dependencies: ["03-001", "03-002", "03-003"]
+dependencies: ["04-001", "04-002", "04-003"]
 parallel_safe: true
 modules: ["frontend", "dashboard"]
 priority: "MUST"

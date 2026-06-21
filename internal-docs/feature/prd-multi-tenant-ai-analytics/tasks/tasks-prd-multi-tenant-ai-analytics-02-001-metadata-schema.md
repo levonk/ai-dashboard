@@ -7,7 +7,7 @@ prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 2
 parallel_id: 1
 branch: "feature/current/prd-multi-tenant-ai-analytics/story-02-001-metadata-schema"
-status: "in-progress"
+status: "done"
 assignee: ""
 reviewer: ""
 dependencies: ["01-002"]

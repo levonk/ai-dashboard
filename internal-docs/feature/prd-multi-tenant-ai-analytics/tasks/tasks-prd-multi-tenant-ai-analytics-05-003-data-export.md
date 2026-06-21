@@ -1,16 +1,16 @@
 ---
-story_id: "04-003"
+story_id: "05-003"
 story_title: "Data Export Capabilities"
 story_name: "data-export"
 prd_name: "prd-multi-tenant-ai-analytics"
 prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
-phase: 4
+phase: 5
 parallel_id: 3
-branch: "feature/current/prd-multi-tenant-ai-analytics/story-04-003-data-export"
+branch: "feature/current/prd-multi-tenant-ai-analytics/story-05-003-data-export"
 status: "todo"
 assignee: ""
 reviewer: ""
-dependencies: ["03-002", "04-002"]
+dependencies: ["04-002", "05-002"]
 parallel_safe: true
 modules: ["api", "export"]
 priority: "SHOULD"
@@ -35,6 +35,7 @@ Implement bulk data export capabilities for external analysis and compliance req
 - [ ] Create export job management and monitoring — target: src/export/management.ts
 - [ ] Add export delivery mechanisms (download, email, S3) — target: src/export/delivery.ts
 - [ ] Implement export data sanitization for privacy — target: src/export/privacy.ts
+- [ ] **Note**: ToonFormat support for AI agent bulk export moved to story 04-004
 
 ## Relevant Files
 

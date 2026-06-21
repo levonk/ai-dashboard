@@ -72,8 +72,12 @@
 - **Multi-Dimensional Filtering**: Filter analytics by any combination of dimensions
 - **Drill-Down Capability**: From high-level metrics to individual request details
 - **Custom Dashboards**: User-configurable dashboard layouts and widgets
-- **Export Capabilities**: Export analytics data in multiple formats (CSV, JSON, PDF)
+- **Export Capabilities**: Export analytics data in multiple formats:
+  - **End-User Exports**: CSV, JSON, PDF for human consumption
+  - **AI Agent Exports**: ToonFormat (https://toonformat.dev/) for bulk data transfer to minimize token usage
+  - **Single Record Exports**: JSON for individual record transfer in plaintext protocols
 - **Responsive Design**: Works across desktop, tablet, and mobile devices
+- **Multi-Format Output**: Support both HTML (for end-users) and Markdown/ToonFormat (for AI agents) from the same underlying data
 
 ### Alerting and Notifications
 - **Real-Time Alerts**: Configurable alerts for usage thresholds, anomalies, cost overruns
@@ -96,6 +100,19 @@
 - **SDK Support**: Official SDKs for popular languages (Python, JavaScript, Go)
 - **Collector SDK**: Easy integration for custom pipeline stages
 - **Data Export**: Bulk data export capabilities for external analysis
+
+### Multi-Output Interface Requirements
+- **Web Dashboard (End-User Interface)**: HTML format for human users browsing the dashboard
+- **AI Agent Interface**: Support standard AI agent consumption patterns:
+  - Direct service API access
+  - Markdown output format
+  - Both API and markdown output options
+- **AI-to-Service Data Exchange**:
+  - **Single Records**: Use JSON format for plaintext protocol exchanges (do not use binary formats like Protocol Buffers, Apache Thrift, Captain Proto, Apache Avro for plaintext protocols)
+  - **Bulk Data Transfer**: Use ToonFormat (https://toonformat.dev/) instead of JSON to minimize token usage when transferring large datasets between AI agents and services
+- **Service-to-AI Data Exchange**:
+  - **Single Records**: Use JSON format for plaintext protocol responses
+  - **Bulk Data Transfer**: Use ToonFormat (https://toonformat.dev/) instead of JSON to minimize token usage when providing large datasets to AI agents
 
 ### Licensing and Contribution
 - **Open Source License**: AGPL 3.0 for all open-source features

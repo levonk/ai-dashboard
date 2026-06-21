@@ -1,16 +1,16 @@
 ---
-story_id: "04-002"
+story_id: "05-002"
 story_title: "REST API Implementation"
 story_name: "rest-api"
 prd_name: "prd-multi-tenant-ai-analytics"
 prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
-phase: 4
+phase: 5
 parallel_id: 2
-branch: "feature/current/prd-multi-tenant-ai-analytics/story-04-002-rest-api"
+branch: "feature/current/prd-ai-analytics/story-05-002-rest-api"
 status: "todo"
 assignee: ""
 reviewer: ""
-dependencies: ["03-001", "03-002", "03-003"]
+dependencies: ["04-001", "04-002", "04-003"]
 parallel_safe: true
 modules: ["api", "backend"]
 priority: "MUST"
