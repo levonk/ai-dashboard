@@ -1,0 +1,43 @@
+{
+  "name": "analytics-rs",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cargo build --release",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cargo test",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cargo clippy -- -D warnings",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cargo fmt",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cargo check",
+        "cwd": "{projectRoot}"
+      }
+    }
+  }
+}
