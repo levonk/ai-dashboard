@@ -7,7 +7,7 @@ prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 2
 parallel_id: 1
 branch: "feature/current/prd-multi-tenant-ai-analytics/story-02-001-metadata-schema"
-status: "todo"
+status: "in-progress"
 assignee: ""
 reviewer: ""
 dependencies: ["01-002"]
@@ -27,14 +27,14 @@ Implement a standardized metadata schema that ensures consistent analytics acros
 
 ## Sub-Tasks
 
-- [ ] Design common metadata schema for all collectors — target: src/metadata/schema.ts
-- [ ] Implement metadata validation and type checking — target: src/metadata/validation.ts
-- [ ] Create metadata builders and helpers — target: src/metadata/builders.ts
-- [ ] Add metadata serialization/deserialization — target: src/metadata/serialization.ts
-- [ ] Implement metadata versioning and migration — target: src/metadata/versioning.ts
-- [ ] Create metadata documentation and examples — target: docs/metadata-schema.md
-- [ ] Add metadata test fixtures and validators — target: test/metadata/fixtures.ts
-- [ ] Implement metadata enrichment and transformation — target: src/metadata/enrichment.ts
+- [x] Design common metadata schema for all collectors — target: src/metadata/schema.ts
+- [x] Implement metadata validation and type checking — target: src/metadata/validation.ts
+- [x] Create metadata builders and helpers — target: src/metadata/builders.ts
+- [x] Add metadata serialization/deserialization — target: src/metadata/serialization.ts
+- [x] Implement metadata versioning and migration — target: src/metadata/versioning.ts
+- [x] Create metadata documentation and examples — target: docs/metadata-schema.md
+- [x] Add metadata test fixtures and validators — target: test/metadata/fixtures.ts
+- [x] Implement metadata enrichment and transformation — target: src/metadata/enrichment.ts
 
 ## Relevant Files
 
@@ -50,14 +50,14 @@ Implement a standardized metadata schema that ensures consistent analytics acros
 
 ## Acceptance Criteria
 
-- [ ] Common metadata schema covers all required dimensions
-- [ ] Validation ensures data consistency across collectors
-- [ ] Builders simplify metadata creation for collectors
-- [ ] Serialization supports multiple formats (JSON, protobuf)
-- [ ] Versioning handles schema evolution without breaking changes
-- [ ] Documentation provides clear examples for all metadata types
-- [ ] Test fixtures cover common and edge cases
-- [ ] Enrichment adds derived metadata automatically
+- [x] Common metadata schema covers all required dimensions
+- [x] Validation ensures data consistency across collectors
+- [x] Builders simplify metadata creation for collectors
+- [x] Serialization supports multiple formats (JSON, protobuf)
+- [x] Versioning handles schema evolution without breaking changes
+- [x] Documentation provides clear examples for all metadata types
+- [x] Test fixtures cover common and edge cases
+- [x] Enrichment adds derived metadata automatically
 
 ## Test Plan
 

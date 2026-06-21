@@ -11,13 +11,13 @@ This index provides a summary of all implementation stories for the AI Analytics
 | 01-001 | Project Setup and Licensing Framework | feature/current/prd-ai-analytics/story-01-001-project-setup-licensing | None | [x] Done | Parallel-safe: true | project-root, licensing |
 | 01-002 | Core Data Model and Schema Design | feature/current/prd-ai-analytics/story-01-002-core-data-model | None | [x] Done | Parallel-safe: true | database, schema |
 | 01-003 | Analytics Package Foundation | feature/current/prd-ai-analytics/story-01-003-analytics-package | None | [x] Done | Parallel-safe: true | packages, analytics-rs |
-| 01-004 | Proxy Service Framework | feature/current/prd-ai-analytics/story-01-004-proxy-framework | 01-003 | [~] In-Progress | Parallel-safe: true | proxy, framework |
+| 01-004 | Proxy Service Framework | feature/current/prd-ai-analytics/story-01-004-proxy-framework | 01-003 | [x] Done | Parallel-safe: true | proxy, framework |
 
 ## Phase 02: Core Data Collection
 
 | Story ID | Story Title | Branch | Dependencies | Parallel-safe | Modules |
 | -------- | ----------- | ------ | ------------ | ------------- | ------- |
-| 02-001 | Standardized Metadata Schema | feature/current/prd-ai-analytics/story-02-001-metadata-schema | 01-002 | Parallel-safe: true | metadata, schema |
+| 02-001 | Standardized Metadata Schema | feature/current/prd-ai-analytics/story-02-001-metadata-schema | 01-002 | [~] In-Progress | Parallel-safe: true | metadata, schema |
 | 02-002 | Content Hashing and Token Estimation | feature/current/prd-ai-analytics/story-02-002-hashing-token-estimation | 01-002 | Parallel-safe: true | utils, processing |
 | 02-003 | Proxy Data Collection | feature/current/prd-ai-analytics/story-02-003-proxy-collection | 01-004 | Parallel-safe: true | proxy, collection |
 

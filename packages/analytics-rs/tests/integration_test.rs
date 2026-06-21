@@ -2,6 +2,8 @@ use analytics_rs::{Aggregator, CostCalculator, FilterEngine, Processor, TimeSeri
 use analytics_rs::models::{TelemetryEvent, AnalyticsQuery, AggregationType, TimeRange, Filter, FilterOperator};
 use chrono::{Utc, Duration};
 
+mod metadata_fixtures;
+
 #[test]
 fn test_basic_aggregation() {
     let events = vec![
