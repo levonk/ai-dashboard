@@ -27,14 +27,14 @@ Implement data collection functionality in the proxy service to capture telemetr
 
 ## Sub-Tasks
 
-- [ ] Implement request metadata extraction (AI client, user, pipeline stage) — target: apps/proxy/src/collection/metadata.rs
-- [ ] Add timing metrics collection (request duration, provider latency) — target: apps/proxy/src/collection/timing.rs
-- [ ] Implement token counting and cost estimation — target: apps/proxy/src/collection/tokens.rs
-- [ ] Add error tracking and classification — target: apps/proxy/src/collection/errors.rs
-- [ ] Create database write operations for analytics mode — target: apps/proxy/src/collection/database.rs
-- [ ] Implement content hashing for request correlation — target: apps/proxy/src/collection/hashing.rs
-- [ ] Add multi-dimensional attribute collection — target: apps/proxy/src/collection/dimensions.rs
-- [ ] Create collection tests and validation — target: apps/proxy/tests/collection/
+- [x] Implement request metadata extraction (AI client, user, pipeline stage) — target: apps/proxy/src/collection/metadata.rs
+- [x] Add timing metrics collection (request duration, provider latency) — target: apps/proxy/src/collection/timing.rs
+- [x] Implement token counting and cost estimation — target: apps/proxy/src/collection/tokens.rs
+- [x] Add error tracking and classification — target: apps/proxy/src/collection/errors.rs
+- [x] Create database write operations for analytics mode — target: apps/proxy/src/collection/database.rs
+- [x] Implement content hashing for request correlation — target: apps/proxy/src/collection/hashing.rs
+- [x] Add multi-dimensional attribute collection — target: apps/proxy/src/collection/dimensions.rs
+- [x] Create collection tests and validation — target: apps/proxy/tests/collection/
 
 ## Relevant Files
 

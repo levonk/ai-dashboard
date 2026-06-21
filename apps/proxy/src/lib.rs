@@ -28,6 +28,7 @@ pub mod routing;
 pub mod telemetry;
 pub mod analytics_mode;
 pub mod sdk;
+pub mod collection;
 
 pub use logging::{
     Verbosity, resolve_log_level, is_shutdown_requested, request_shutdown,
@@ -53,4 +54,5 @@ pub use privacy::{PrivacyManager, PrivacyConfig};
 pub use audit::{AuditLogger, AuditConfig, AuditEntry};
 pub use deprecation::{DeprecationManager, DeprecationSeverity, DeprecationWarning};
 pub use destructive::{DestructiveOperation, detect_destructive_operation, check_paths_for_destructive};
+pub use collection::MetadataExtractor;
 

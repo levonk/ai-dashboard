@@ -18,8 +18,8 @@ This index provides a summary of all implementation stories for the AI Analytics
 | Story ID | Story Title | Branch | Dependencies | Parallel-safe | Modules |
 | -------- | ----------- | ------ | ------------ | ------------- | ------- |
 | 02-001 | Standardized Metadata Schema | feature/current/prd-ai-analytics/story-02-001-metadata-schema | 01-002 | [x] Done | Parallel-safe: true | metadata, schema |
-| 02-002 | Content Hashing and Token Estimation | feature/current/prd-ai-analytics/story-02-002-hashing-token-estimation | 01-002 | [~] In-Progress | Parallel-safe: true | utils, processing |
-| 02-003 | Proxy Data Collection | feature/current/prd-ai-analytics/story-02-003-proxy-collection | 01-004 | Parallel-safe: true | proxy, collection |
+| 02-002 | Content Hashing and Token Estimation | feature/current/prd-ai-analytics/story-02-002-hashing-token-estimation | 01-002 | [x] Done | Parallel-safe: true | utils, processing |
+| 02-003 | Proxy Data Collection | feature/current/prd-ai-analytics/story-02-003-proxy-collection | 01-004 | [x] Done | Parallel-safe: true | proxy, collection |
 
 ## Phase 03: Analytics Package Implementation
 
