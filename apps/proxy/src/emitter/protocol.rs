@@ -6,7 +6,6 @@
 use anyhow::{Context, Result};
 use analytics_rs::TelemetryEvent;
 use serde::{Deserialize, Serialize};
-use std::time::SystemTime;
 use tracing::debug;
 
 /// Protocol version for event serialization
