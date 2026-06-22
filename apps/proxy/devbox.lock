@@ -1,0 +1,68 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "cargo": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#cargo",
+      "source": "nixpkg"
+    },
+    "cargo-audit": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#cargo-audit",
+      "source": "nixpkg"
+    },
+    "cargo-tarpaulin": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#cargo-tarpaulin",
+      "source": "nixpkg"
+    },
+    "cargo-watch": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#cargo-watch",
+      "source": "nixpkg"
+    },
+    "clippy": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#clippy",
+      "source": "nixpkg"
+    },
+    "github:NixOS/nixpkgs/nixpkgs-unstable": {
+      "last_modified": "2026-06-16T10:57:20Z",
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158?lastModified=1781607440"
+    },
+    "just": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#just",
+      "source": "nixpkg"
+    },
+    "openssl": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#openssl",
+      "source": "nixpkg"
+    },
+    "openssl.dev": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#openssl.dev",
+      "source": "nixpkg"
+    },
+    "pkg-config": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#pkg-config",
+      "source": "nixpkg"
+    },
+    "postgresql": {
+      "plugin_version": "0.0.2",
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#postgresql",
+      "source": "nixpkg"
+    },
+    "redis": {
+      "plugin_version": "0.0.2",
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#redis",
+      "source": "nixpkg"
+    },
+    "rust-analyzer": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#rust-analyzer",
+      "source": "nixpkg"
+    },
+    "rustc": {
+      "plugin_version": "0.0.1",
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#rustc",
+      "source": "nixpkg"
+    },
+    "rustfmt": {
+      "resolved": "github:NixOS/nixpkgs/3e41b24abd260e8f71dbe2f5737d24122f972158#rustfmt",
+      "source": "nixpkg"
+    }
+  }
+}

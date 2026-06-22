@@ -19,3 +19,7 @@ criterion = "0.5"
 [[bench]]
 name = "analytics_benchmark"
 harness = false
+
+[[bench]]
+name = "aggregation"
+harness = false

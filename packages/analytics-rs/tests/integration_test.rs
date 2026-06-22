@@ -32,7 +32,8 @@ fn test_basic_aggregation() {
         group_by: vec![],
     };
 
-    let result = Aggregator::aggregate(&events, &query);
+    let aggregator = Aggregator::new();
+    let result = aggregator.aggregate(&events, &query);
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 1);
 }
@@ -78,7 +79,8 @@ fn test_sum_aggregation() {
         group_by: vec![],
     };
 
-    let result = Aggregator::aggregate(&events, &query);
+    let aggregator = Aggregator::new();
+    let result = aggregator.aggregate(&events, &query);
     assert!(result.is_ok());
     let result_json = result.unwrap();
     assert_eq!(result_json["total_cost_usd"].as_f64().unwrap(), 0.03);
@@ -127,7 +129,8 @@ fn test_average_aggregation() {
         group_by: vec![],
     };
 
-    let result = Aggregator::aggregate(&events, &query);
+    let aggregator = Aggregator::new();
+    let result = aggregator.aggregate(&events, &query);
     assert!(result.is_ok());
     let result_json = result.unwrap();
     assert_eq!(result_json["avg_cost_usd"].as_f64().unwrap(), 0.015);

@@ -20,7 +20,8 @@ impl Processor {
         let filtered = FilterEngine::apply(&time_filtered, &query.filters)?;
         
         // Step 3: Perform aggregation
-        let data = Aggregator::aggregate(&filtered, query)?;
+        let aggregator = Aggregator::new();
+        let data = aggregator.aggregate(&filtered, query)?;
         
         let query_duration = start_time.elapsed();
         
@@ -50,12 +51,13 @@ impl Processor {
         let grouped_data = Self::group_events(&filtered, &query.group_by)?;
         
         // Apply aggregation to each group
+        let aggregator = Aggregator::new();
         let mut results = Vec::new();
         for (group_key, group_events) in grouped_data {
             let mut group_query = query.clone();
             group_query.group_by = vec![]; // Remove grouping for individual aggregation
             
-            let aggregated = Aggregator::aggregate(&group_events, &group_query)?;
+            let aggregated = aggregator.aggregate(&group_events, &group_query)?;
             
             results.push(serde_json::json!({
                 "group": group_key,

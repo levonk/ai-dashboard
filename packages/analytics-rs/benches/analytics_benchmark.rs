@@ -30,8 +30,9 @@ fn bench_aggregation(c: &mut Criterion) {
         group_by: vec![],
     };
 
+    let aggregator = Aggregator::new();
     c.bench_function("aggregation_count_1000_events", |b| {
-        b.iter(|| Aggregator::aggregate(black_box(&events), black_box(&query)))
+        b.iter(|| aggregator.aggregate(black_box(&events), black_box(&query)))
     });
 }
 

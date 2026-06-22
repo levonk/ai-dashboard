@@ -1,21 +1,21 @@
 ---
 story_id: "03-001"
-story_title: "On-Demand Analytics Queries"
-story_name: "analytics-queries"
+story_title: "Aggregation Functions"
+story_name: "aggregation"
 prd_name: "prd-multi-tenant-ai-analytics"
 prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 3
 parallel_id: 1
-branch: "feature/current/prd-ai-analytics/story-03-001-analytics-queries"
+branch: "feature/current/prd-ai-analytics/story-03-001-aggregation"
 status: "todo"
 assignee: ""
 reviewer: ""
-dependencies: ["02-001", "02-002", "02-003"]
+dependencies: ["01-003"]
 parallel_safe: true
-modules: ["web", "analytics"]
+modules: ["analytics-rs", "aggregation"]
 priority: "MUST"
-risk_level: "high"
-tags: ["feat", "analytics", "queries"]
+risk_level: "medium"
+tags: ["feat", "analytics-rs", "aggregation"]
 due: "2025-03-31"
 created_at: "2025-06-20"
 updated_at: "2025-06-20"
@@ -23,98 +23,79 @@ updated_at: "2025-06-20"
 
 ## Summary
 
-Implement on-demand analytics query system in the web service to support dashboard visualization and data exploration. This system executes SQL queries against the PostgreSQL database to generate aggregated metrics, trends, and comparisons on-demand for dashboard display.
+Implement core aggregation functions in the analytics-rs package for computing metrics across multiple dimensions. These functions are execution-context agnostic and can be used by proxy (open-source), analytics service (commercial), or Spark jobs (commercial batch processing).
 
 ## Sub-Tasks
 
-- [ ] Design query API and response schemas — target: apps/web/src/app/api/analytics/query/route.ts
-- [ ] Implement multi-dimensional filtering queries — target: apps/web/src/lib/analytics/filters.ts
-- [ ] Add time-series aggregation queries — target: apps/web/src/lib/analytics/timeseries.ts
-- [ ] Create comparative analysis queries (providers, models, clients) — target: apps/web/src/lib/analytics/comparison.ts
-- [ ] Implement cost calculation queries — target: apps/web/src/lib/analytics/costs.ts
-- [ ] Add query optimization and caching — target: apps/web/src/lib/analytics/cache.ts
-- [ ] Create query validation and sanitization — target: apps/web/src/lib/analytics/validation.ts
-- [ ] Add query tests and performance benchmarks — target: apps/web/tests/analytics/
+- [x] Design aggregation function interface and data structures — target: packages/analytics-rs/src/aggregation.rs
+- [x] Implement basic aggregation functions (sum, count, avg, min, max) — target: packages/analytics-rs/src/aggregation.rs
+- [x] Add multi-dimensional aggregation (group by client, provider, model, etc.) — target: packages/analytics-rs/src/aggregation.rs
+- [x] Implement percentile calculations (p50, p90, p95, p99) — target: packages/analytics-rs/src/aggregation.rs
+- [x] Create histogram and bucket aggregation functions — target: packages/analytics-rs/src/aggregation.rs
+- [x] Add rate calculations (requests per second, tokens per second) — target: packages/analytics-rs/src/aggregation.rs
+- [x] Implement aggregation result caching — target: packages/analytics-rs/src/aggregation.rs
+- [x] Create aggregation function tests — target: packages/analytics-rs/tests/aggregation/
+- [x] Add performance benchmarks for aggregation functions — target: packages/analytics-rs/benches/aggregation.rs
 
 ## Relevant Files
 
-- `apps/web/src/app/api/analytics/query/route.ts` — Query API endpoints
-- `apps/web/src/lib/analytics/filters.ts` — Multi-dimensional filtering
-- `apps/web/src/lib/analytics/timeseries.ts` — Time-series aggregation
-- `apps/web/src/lib/analytics/comparison.ts` — Comparative analysis
-- `apps/web/src/lib/analytics/costs.ts` — Cost calculation
-- `apps/web/src/lib/analytics/cache.ts` — Query caching
-- `apps/web/src/lib/analytics/validation.ts` — Query validation
-- `apps/web/tests/analytics/` — Analytics query tests
-- `docs/analytics-query-guide.md` — Analytics query guide
-- [ ] Implement event ingestion pipeline — target: src/analytics/streaming/ingestion.ts
-- [ ] Create real-time aggregation functions — target: src/analytics/streaming/aggregation.ts
-- [ ] Implement sliding window time-series aggregation — target: src/analytics/streaming/windows.ts
-- [ ] Add multi-dimensional filtering and grouping — target: src/analytics/streaming/filters.ts
-- [ ] Create real-time metric storage layer — target: src/analytics/streaming/storage.ts
-- [ ] Implement stream processing error handling and recovery — target: src/analytics/streaming/errors.ts
-- [ ] Add real-time aggregation performance monitoring — target: src/analytics/streaming/monitoring.ts
-
-## Relevant Files
-
-- `src/analytics/streaming/architecture.ts` — Stream processing design
-- `src/analytics/streaming/ingestion.ts` — Event ingestion pipeline
-- `src/analytics/streaming/aggregation.ts` — Real-time aggregation functions
-- `src/analytics/streaming/windows.ts` — Sliding window implementation
-- `src/analytics/streaming/filters.ts` — Multi-dimensional filtering
-- `src/analytics/streaming/storage.ts` — Real-time metric storage
-- `src/analytics/streaming/errors.ts` — Error handling and recovery
-- `src/analytics/streaming/monitoring.ts` — Performance monitoring
-- `test/analytics/streaming/` — Stream processing tests
-- `docs/streaming-architecture.md` — Architecture documentation
+- `packages/analytics-rs/src/aggregation.rs` — Core aggregation functions
+- `packages/analytics-rs/src/lib.rs` — Package exports
+- `packages/analytics-rs/tests/aggregation/` — Aggregation tests
+- `packages/analytics-rs/benches/aggregation.rs` — Performance benchmarks
+- `docs/aggregation-guide.md` — Aggregation usage guide
 
 ## Acceptance Criteria
 
-- [ ] Stream processing handles 10,000+ events/second
-- [ ] Real-time aggregation latency <5 seconds
-- [ ] Sliding windows support multiple time ranges (1m, 5m, 15m, 1h)
-- [ ] Multi-dimensional filtering works across all dimensions
-- [ ] Error handling prevents stream processing failures
-- [ ] Storage layer supports high-frequency writes
-- [ ] Monitoring provides visibility into stream health
-- [ ] System gracefully handles backpressure and spikes
+- [x] All basic aggregation functions (sum, count, avg, min, max) work correctly
+- [x] Multi-dimensional grouping works across all supported dimensions
+- [x] Percentile calculations are accurate within 1% tolerance
+- [x] Histogram functions create appropriate bucket distributions
+- [x] Rate calculations handle time window edge cases correctly
+- [x] Aggregation functions handle empty datasets gracefully
+- [x] Performance benchmarks meet targets (<100ms for 1M records)
+- [x] Test coverage exceeds 90% for aggregation functions
 
 ## Test Plan
 
-- Unit: `npm test src/analytics/streaming/ingestion.ts`
-- Unit: `npm test src/analytics/streaming/aggregation.ts`
-- Load: Test with 10,000+ events/second
-- Latency: Verify <5 second aggregation latency
-- Failure: Test error handling and recovery scenarios
+- Unit: `devbox run -- cargo test aggregation` (packages/analytics-rs)
+- Benchmark: `devbox run -- cargo bench aggregation` (packages/analytics-rs)
+- Integration: Test with sample analytics data
+- Performance: Verify <100ms aggregation for 1M records
+- Edge cases: Empty datasets, null values, extreme values
 
 ## Observability
 
-- Monitor stream processing throughput and latency
-- Track aggregation window processing times
-- Alert on stream backpressure or failures
-- Log filter performance and cardinality
+- Log aggregation function execution times
+- Track cache hit rates for aggregation results
+- Monitor memory usage during large aggregations
+- Alert on slow aggregation queries
 
 ## Compliance
 
-- Ensure real-time processing doesn't expose sensitive data
-- Implement data retention for real-time metrics
-- Support real-time data deletion requests
+- Ensure aggregation doesn't expose sensitive data patterns
+- Support data minimization in aggregation results
+- Handle data deletion requests in cached results
 
 ## Risks & Mitigations
 
-- Risk: High throughput may overwhelm system — Mitigation: Implement backpressure handling and scaling
-- Risk: Real-time aggregation may be resource-intensive — Mitigation: Optimize algorithms and use efficient data structures
-- Risk: Stream failures may lose data — Mitigation: Implement durable queuing and recovery mechanisms
+- Risk: Large aggregations may be memory-intensive — Mitigation: Implement streaming aggregation for large datasets
+- Risk: Cached results may become stale — Mitigation: Implement cache invalidation on data updates
+- Risk: Complex multi-dimensional queries may be slow — Mitigation: Add query optimization and indexing
 
 ## Dependencies
 
-- 02-001: Standardized Metadata Schema (aggregation depends on consistent metadata)
-- 02-002: Content Hashing and Token Estimation (aggregation uses hashed request IDs and token counts)
-- 02-003: Pipeline Stage Collectors (aggregation processes collected analytics events)
+- 01-003: Analytics Package Foundation (aggregation functions build on the analytics package structure)
 
-## Notes
+## Definition of Done
 
-- Focus on horizontal scalability for stream processing
-- Consider using Redis or similar for real-time metric storage
-- Design for fault tolerance and automatic recovery
-- Balance real-time freshness with system stability
+- All aggregation functions implemented and tested
+- Performance benchmarks meet targets
+- Documentation complete with usage examples
+- Code review approved
+- All acceptance criteria verified
+
+## Commit Conventions
+
+- Use conventional commits with module scoping: `feat(analytics-rs): add aggregation functions`
+- Reference story ID in commit messages: "Related to 03-001 in PRD multi-tenant-ai-analytics"

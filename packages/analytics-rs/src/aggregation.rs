@@ -1,25 +1,109 @@
 use crate::models::{TelemetryEvent, AnalyticsQuery, AggregationType};
 use anyhow::Result;
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
-pub struct Aggregator;
+pub struct Aggregator {
+    cache: Arc<Mutex<AggregationCache>>,
+}
+
+impl Default for Aggregator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Aggregator {
-    pub fn aggregate(events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
-        match query.aggregation {
-            AggregationType::Count => Self::count(events, query),
-            AggregationType::Sum => Self::sum(events, query),
-            AggregationType::Average => Self::average(events, query),
-            AggregationType::Min => Self::min(events, query),
-            AggregationType::Max => Self::max(events, query),
-            AggregationType::Percentile(p) => Self::percentile(events, query, p),
+    pub fn new() -> Self {
+        Self {
+            cache: Arc::new(Mutex::new(AggregationCache::new())),
         }
     }
 
-    fn count(events: &[TelemetryEvent], _query: &AnalyticsQuery) -> Result<serde_json::Value> {
+    pub fn with_cache_ttl(ttl_seconds: u64) -> Self {
+        Self {
+            cache: Arc::new(Mutex::new(AggregationCache::with_ttl(Duration::from_secs(ttl_seconds)))),
+        }
+    }
+}
+
+struct AggregationCache {
+    data: HashMap<String, (serde_json::Value, Instant)>,
+    ttl: Duration,
+}
+
+impl AggregationCache {
+    fn new() -> Self {
+        Self {
+            data: HashMap::new(),
+            ttl: Duration::from_secs(300), // Default 5 minutes
+        }
+    }
+
+    fn with_ttl(ttl: Duration) -> Self {
+        Self {
+            data: HashMap::new(),
+            ttl,
+        }
+    }
+
+    fn get(&self, key: &str) -> Option<serde_json::Value> {
+        if let Some((value, timestamp)) = self.data.get(key) {
+            if timestamp.elapsed() < self.ttl {
+                return Some(value.clone());
+            }
+        }
+        None
+    }
+
+    fn set(&mut self, key: String, value: serde_json::Value) {
+        self.data.insert(key, (value, Instant::now()));
+    }
+
+    fn clear_expired(&mut self) {
+        let now = Instant::now();
+        self.data.retain(|_, (_, timestamp)| now.duration_since(*timestamp) < self.ttl);
+    }
+}
+
+impl Aggregator {
+    pub fn aggregate(&self, events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
+        // Generate cache key
+        let cache_key = format!("{:?}_{:?}", query.aggregation, query.group_by);
+        
+        // Check cache
+        if let Some(cached) = self.cache.lock().unwrap().get(&cache_key) {
+            return Ok(cached);
+        }
+        
+        // Perform aggregation
+        let result = match &query.aggregation {
+            AggregationType::Count => self.count(events, query),
+            AggregationType::Sum => self.sum(events, query),
+            AggregationType::Average => self.average(events, query),
+            AggregationType::Min => self.min(events, query),
+            AggregationType::Max => self.max(events, query),
+            AggregationType::Percentile(p) => self.percentile(events, query, *p),
+        };
+        
+        // Cache the result
+        if let Ok(ref result) = result {
+            self.cache.lock().unwrap().set(cache_key, result.clone());
+        }
+        
+        result
+    }
+
+    pub fn clear_cache(&self) {
+        self.cache.lock().unwrap().clear_expired();
+    }
+
+    fn count(&self, events: &[TelemetryEvent], _query: &AnalyticsQuery) -> Result<serde_json::Value> {
         Ok(serde_json::json!(events.len()))
     }
 
-    fn sum(events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
+    fn sum(&self, events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
         if query.group_by.is_empty() {
             let total_cost: f64 = events.iter().map(|e| e.cost_usd).sum();
             let total_input_tokens: u32 = events.iter().map(|e| e.input_tokens).sum();
@@ -57,7 +141,7 @@ impl Aggregator {
         }
     }
 
-    fn average(events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
+    fn average(&self, events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
         if events.is_empty() {
             return Ok(serde_json::json!({
                 "avg_cost_usd": 0.0,
@@ -117,7 +201,7 @@ impl Aggregator {
         }
     }
 
-    fn min(events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
+    fn min(&self, events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
         if events.is_empty() {
             return Ok(serde_json::json!({
                 "min_cost_usd": 0.0,
@@ -166,7 +250,7 @@ impl Aggregator {
         }
     }
 
-    fn max(events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
+    fn max(&self, events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
         if events.is_empty() {
             return Ok(serde_json::json!({
                 "max_cost_usd": 0.0,
@@ -215,7 +299,7 @@ impl Aggregator {
         }
     }
 
-    fn percentile(events: &[TelemetryEvent], query: &AnalyticsQuery, percentile: f64) -> Result<serde_json::Value> {
+    fn percentile(&self, events: &[TelemetryEvent], query: &AnalyticsQuery, _percentile: f64) -> Result<serde_json::Value> {
         if events.is_empty() {
             return Ok(serde_json::json!({
                 "p50_cost_usd": 0.0,
@@ -229,16 +313,21 @@ impl Aggregator {
             let mut costs: Vec<f64> = events.iter().map(|e| e.cost_usd).collect();
             costs.sort_by(|a, b| a.partial_cmp(b).unwrap());
             
-            let p_value = if percentile <= 0.0 || percentile >= 1.0 {
-                0.0
-            } else {
-                let index = ((costs.len() - 1) as f64 * percentile) as usize;
-                costs[index]
-            };
+            // Calculate multiple percentiles
+            let percentiles = vec![0.5, 0.9, 0.95, 0.99];
+            let mut result = serde_json::Map::new();
             
-            Ok(serde_json::json!({
-                format!("p{}_cost_usd", (percentile * 100.0) as u32): p_value
-            }))
+            for p in percentiles {
+                let p_value = if p <= 0.0 || p >= 1.0 {
+                    0.0
+                } else {
+                    let index = ((costs.len() - 1) as f64 * p) as usize;
+                    costs[index]
+                };
+                result.insert(format!("p{}_cost_usd", (p * 100.0) as u32), serde_json::json!(p_value));
+            }
+            
+            Ok(serde_json::json!(result))
         } else {
             // Grouped percentile implementation
             let mut grouped: std::collections::HashMap<String, Vec<f64>> = std::collections::HashMap::new();
@@ -253,15 +342,19 @@ impl Aggregator {
             }
             
             let mut result: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
+            let percentiles = vec![0.5, 0.9, 0.95, 0.99];
             
             for (key, mut costs) in grouped {
                 costs.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                let index = ((costs.len() - 1) as f64 * percentile) as usize;
-                let p_value = if percentile <= 0.0 || percentile >= 1.0 { 0.0 } else { costs[index] };
+                let mut percentile_result = serde_json::Map::new();
                 
-                result.insert(key, serde_json::json!({
-                    format!("p{}_cost_usd", (percentile * 100.0) as u32): p_value
-                }));
+                for p in &percentiles {
+                    let index = ((costs.len() - 1) as f64 * p) as usize;
+                    let p_value = if *p <= 0.0 || *p >= 1.0 { 0.0 } else { costs[index] };
+                    percentile_result.insert(format!("p{}_cost_usd", (*p * 100.0) as u32), serde_json::json!(p_value));
+                }
+                
+                result.insert(key, serde_json::json!(percentile_result));
             }
             
             Ok(serde_json::json!(result))
@@ -276,5 +369,70 @@ impl Aggregator {
             "input_type" => event.input_type.clone(),
             _ => "unknown".to_string(),
         }
+    }
+
+    pub fn histogram(&self, events: &[TelemetryEvent], field: &str, buckets: Vec<f64>) -> Result<serde_json::Value> {
+        if events.is_empty() {
+            return Ok(serde_json::json!({
+                "field": field,
+                "buckets": []
+            }));
+        }
+
+        let mut histogram: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
+        
+        for event in events {
+            let value = match field {
+                "cost_usd" => event.cost_usd,
+                "input_tokens" => event.input_tokens as f64,
+                "output_tokens" => event.output_tokens as f64,
+                "duration_ms" => event.duration_ms as f64,
+                _ => continue,
+            };
+            
+            let bucket_label = Self::find_bucket_static(value, &buckets);
+            *histogram.entry(bucket_label).or_insert(0) += 1;
+        }
+        
+        Ok(serde_json::json!({
+            "field": field,
+            "buckets": histogram
+        }))
+    }
+
+    fn find_bucket_static(value: f64, buckets: &[f64]) -> String {
+        for (i, &bucket) in buckets.iter().enumerate() {
+            if value <= bucket {
+                if i == 0 {
+                    return format!("<= {}", bucket);
+                } else {
+                    return format!("{}-{}", buckets[i - 1], bucket);
+                }
+            }
+        }
+        format!("> {}", buckets.last().unwrap_or(&0.0))
+    }
+
+    pub fn rate_calculations(&self, events: &[TelemetryEvent], time_window_seconds: u64) -> Result<serde_json::Value> {
+        if events.is_empty() || time_window_seconds == 0 {
+            return Ok(serde_json::json!({
+                "requests_per_second": 0.0,
+                "input_tokens_per_second": 0.0,
+                "output_tokens_per_second": 0.0,
+                "total_tokens_per_second": 0.0
+            }));
+        }
+
+        let total_requests = events.len() as f64;
+        let total_input_tokens: u32 = events.iter().map(|e| e.input_tokens).sum();
+        let total_output_tokens: u32 = events.iter().map(|e| e.output_tokens).sum();
+        let window_secs = time_window_seconds as f64;
+
+        Ok(serde_json::json!({
+            "requests_per_second": total_requests / window_secs,
+            "input_tokens_per_second": total_input_tokens as f64 / window_secs,
+            "output_tokens_per_second": total_output_tokens as f64 / window_secs,
+            "total_tokens_per_second": (total_input_tokens + total_output_tokens) as f64 / window_secs
+        }))
     }
 }
