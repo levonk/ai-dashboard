@@ -1,4 +1,5 @@
 pub mod alerts;
+pub mod users;
 
 use axum::{Json, response::IntoResponse};
 use serde::Serialize;

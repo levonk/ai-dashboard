@@ -72,7 +72,7 @@ fn handle_no_args(mode: Mode) -> Result<()> {
     
     // Create state summary with empty aggregates (will be populated by real implementation)
     let aggregates = AggregateInfo::empty();
-    let summary = generate_summary(content_type_str, aggregates);
+    let summary = generate_summary(content_type_str, aggregates.clone());
     
     // Create content-first output
     let output = ContentFirstOutput::new(summary, suggestions, mode == Mode::Agent);

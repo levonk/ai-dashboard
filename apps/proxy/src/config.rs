@@ -7,6 +7,8 @@ use std::fs;
 use std::io::Write;
 use crate::security::SecurityUtils;
 
+pub mod security;
+
 const CONFIG_VERSION: u32 = 1;
 const PROJECT_QUALIFIER: &str = "com";
 const PROJECT_ORGANIZATION: &str = "myorg";
