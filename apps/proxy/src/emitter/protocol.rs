@@ -113,8 +113,7 @@ impl Default for ProtocolConfig {
             enable_compression: false,
             compression_level: 6,
             enable_encryption: false,
-            source_id: hostname::get()
-                .unwrap_or_else(|_| "unknown".into())
+            source_id: gethostname::gethostname()
                 .to_string_lossy()
                 .to_string(),
         }
@@ -146,7 +145,8 @@ impl EventSerializer {
 
     /// Serialize a telemetry event to wire format
     pub fn serialize_event(&mut self, event: TelemetryEvent) -> Result<Vec<u8>> {
-        debug!("Serializing event: {}", event.event_id);
+        let event_id = event.event_id.clone();
+        debug!("Serializing event: {}", event_id);
 
         // Create protocol header
         let header = ProtocolHeader {
@@ -191,7 +191,7 @@ impl EventSerializer {
             serialized
         };
 
-        debug!("Successfully serialized event: {} ({} bytes)", event.event_id, final_bytes.len());
+        debug!("Successfully serialized event: {} ({} bytes)", event_id, final_bytes.len());
         Ok(final_bytes)
     }
 

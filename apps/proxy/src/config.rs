@@ -8,6 +8,7 @@ use std::io::Write;
 use crate::security::SecurityUtils;
 
 pub mod security;
+pub mod emitter;
 
 const CONFIG_VERSION: u32 = 1;
 const PROJECT_QUALIFIER: &str = "com";
@@ -127,6 +128,10 @@ pub struct Config {
     /// Message queue configuration for emitter mode (Redis, Kafka, etc.)
     #[serde(default)]
     pub message_queue_url: Option<String>,
+    
+    /// Emitter mode configuration
+    #[serde(default)]
+    pub emitter: crate::config::emitter::EmitterModeConfig,
 }
 
 fn default_proxy_mode() -> String {
@@ -209,6 +214,10 @@ fn default_privacy() -> crate::privacy::PrivacyConfig {
     crate::privacy::PrivacyConfig::default()
 }
 
+fn default_emitter() -> crate::config::emitter::EmitterModeConfig {
+    crate::config::emitter::EmitterModeConfig::default()
+}
+
 impl Default for Config {
     fn default() -> Self {
         Config {
@@ -240,6 +249,7 @@ impl Default for Config {
             database_url: None,
             collector_url: None,
             message_queue_url: None,
+            emitter: default_emitter(),
         }
     }
 }
@@ -269,8 +279,14 @@ impl Config {
                 }
             }
             "emitter" => {
-                if self.collector_url.is_none() && self.message_queue_url.is_none() {
-                    anyhow::bail!("Emitter mode requires either collector_url or message_queue_url to be configured");
+                // Validate emitter-specific configuration
+                self.emitter.validate()
+                    .context("Emitter mode configuration validation failed")?;
+                
+                // Ensure buffer directory exists if fallback is enabled
+                if self.emitter.fallback.enabled {
+                    self.emitter.ensure_buffer_dir()
+                        .context("Failed to ensure buffer directory")?;
                 }
             }
             _ => {

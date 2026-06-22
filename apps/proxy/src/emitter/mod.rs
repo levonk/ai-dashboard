@@ -6,6 +6,10 @@
 //! analytics services.
 
 pub mod protocol;
+pub mod client;
+pub mod queue;
+pub mod fallback;
+pub mod metrics;
 
 pub use protocol::{
     ProtocolConfig,
@@ -16,4 +20,29 @@ pub use protocol::{
     EventMessage,
     TransmissionMetadata,
     PROTOCOL_VERSION,
+};
+
+pub use client::{
+    EmitterClient,
+    EmitterClientConfig,
+    CollectorResponse,
+    CircuitBreakerState,
+};
+
+pub use queue::{
+    MessageQueue,
+    QueueConfig,
+    QueueBackend,
+    QueueStats,
+};
+
+pub use fallback::{
+    FallbackBuffer,
+    FallbackConfig,
+    FallbackStats,
+};
+
+pub use metrics::{
+    MetricsCollector,
+    EmitterMetrics,
 };

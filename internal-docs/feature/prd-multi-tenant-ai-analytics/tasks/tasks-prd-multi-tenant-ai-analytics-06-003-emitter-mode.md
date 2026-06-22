@@ -29,15 +29,15 @@ Implement the foundation for enterprise emitter mode in the proxy service. This 
 
 - [x] Design emitter mode architecture and data flow — target: apps/proxy/src/emitter/README.md
 - [x] Implement event emission protocol and serialization — target: apps/proxy/src/emitter/protocol.rs
-- [ ] Create emitter client for external collector communication — target: apps/proxy/src/emitter/client.rs
-- [ ] Implement message queue integration (Redis/Kafka) — target: apps/proxy/src/emitter/queue.rs
-- [ ] Add emitter mode configuration and startup logic — target: apps/proxy/src/config/emitter.rs
-- [ ] Implement fallback and error handling for emitter mode — target: apps/proxy/src/emitter/fallback.rs
-- [ ] Create emitter metrics and monitoring — target: apps/proxy/src/emitter/metrics.rs
-- [ ] Add emitter mode API endpoints for health/status — target: apps/proxy/src/api/emitter.rs
-- [ ] Implement emitter mode testing framework — target: test/emitter/
-- [ ] Create documentation for emitter mode deployment — target: docs/enterprise/emitter-mode.md
-- [ ] Add emitter mode to proxy CLI and service management — target: apps/proxy/src/cli/emitter.rs
+- [x] Create emitter client for external collector communication — target: apps/proxy/src/emitter/client.rs
+- [x] Implement message queue integration (Redis/Kafka) — target: apps/proxy/src/emitter/queue.rs
+- [x] Add emitter mode configuration and startup logic — target: apps/proxy/src/config/emitter.rs
+- [x] Implement fallback and error handling for emitter mode — target: apps/proxy/src/emitter/fallback.rs
+- [x] Create emitter metrics and monitoring — target: apps/proxy/src/emitter/metrics.rs
+- [x] Add emitter mode API endpoints for health/status — target: apps/proxy/src/api/emitter.rs
+- [x] Implement emitter mode testing framework — target: test/emitter/
+- [x] Create documentation for emitter mode deployment — target: docs/enterprise/emitter-mode.md
+- [x] Add emitter mode to proxy CLI and service management — target: apps/proxy/src/cli/emitter.rs
 
 ## Relevant Files
 
@@ -51,18 +51,18 @@ Implement the foundation for enterprise emitter mode in the proxy service. This 
 
 ## Acceptance Criteria
 
-- [ ] Proxy can operate in emitter mode (configuration-based)
-- [ ] Events are serialized and emitted to external collectors
-- [ ] Message queue integration works (Redis/Kafka)
-- [ ] Fallback mechanisms handle collector unavailability
-- [ ] Emitter mode metrics are exposed for monitoring
-- [ ] Health/status endpoints report emitter mode state
-- [ ] Emitter mode can be toggled via configuration
-- [ ] Performance impact of emitter mode is minimal
-- [ ] Error handling prevents data loss during emission failures
-- [ ] Documentation covers deployment and configuration
-- [ ] Testing framework validates emitter mode behavior
-- [ ] Emitter mode is backward compatible with existing analytics mode
+- [x] Proxy can operate in emitter mode (configuration-based)
+- [x] Events are serialized and emitted to external collectors
+- [x] Message queue integration works (Redis/Kafka)
+- [x] Fallback mechanisms handle collector unavailability
+- [x] Emitter mode metrics are exposed for monitoring
+- [x] Health/status endpoints report emitter mode state
+- [x] Emitter mode can be toggled via configuration
+- [x] Performance impact of emitter mode is minimal
+- [x] Error handling prevents data loss during emission failures
+- [x] Documentation covers deployment and configuration
+- [x] Testing framework validates emitter mode behavior
+- [x] Emitter mode is backward compatible with existing analytics mode
 
 ## Test Plan
 

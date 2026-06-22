@@ -720,6 +720,29 @@ async fn handle_subcommand(command: &Commands, cli: &Cli) -> Result<()> {
             }
         }
 
+        Commands::Emitter { detailed, validate, test_collector, test_queue } => {
+            use cli::emitter::EmitterCommands;
+            use cli::emitter::EmitterSubcommand;
+            
+            let emitter_cmd = if *validate {
+                EmitterCommands {
+                    command: EmitterSubcommand::Validate { config: None },
+                }
+            } else if *test_collector || *test_queue {
+                EmitterCommands {
+                    command: EmitterSubcommand::Test {
+                        collector: *test_collector,
+                        queue: *test_queue,
+                    },
+                }
+            } else {
+                EmitterCommands {
+                    command: EmitterSubcommand::Status { detailed: *detailed },
+                }
+            };
+            cli::emitter::handle_emitter_command(emitter_cmd).await?;
+        }
+
         Commands::Doctor { all, config, daemon, terminal } => {
             println!("Running diagnostics...");
 

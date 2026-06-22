@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 use std::time::Duration;
 
+mod emitter;
+
 /// AI Analytics Proxy Server - Routes AI requests and collects telemetry
 ///
 /// # Content-First Behavior
@@ -478,6 +480,36 @@ pub enum Commands {
         /// Compress output file
         #[arg(long, help = "Compress output file")]
         compress: bool,
+    },
+
+    /// Manage emitter mode (status, validate, buffer, test, reset)
+    ///
+    /// # Examples
+    ///
+    /// Show emitter status:
+    ///   ai-analytics-proxy emitter status
+    ///
+    /// Validate emitter configuration:
+    ///   ai-analytics-proxy emitter validate
+    ///
+    /// Test connectivity:
+    ///   ai-analytics-proxy emitter test --collector --queue
+    Emitter {
+        /// Show detailed status
+        #[arg(long, help = "Show detailed emitter status")]
+        detailed: bool,
+        
+        /// Validate configuration
+        #[arg(long, help = "Validate emitter configuration")]
+        validate: bool,
+        
+        /// Test collector connectivity
+        #[arg(long, help = "Test collector connectivity")]
+        test_collector: bool,
+        
+        /// Test queue connectivity
+        #[arg(long, help = "Test queue connectivity")]
+        test_queue: bool,
     },
 
     /// Session context and hook management
