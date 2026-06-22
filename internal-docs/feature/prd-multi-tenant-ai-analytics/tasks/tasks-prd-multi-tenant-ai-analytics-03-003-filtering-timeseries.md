@@ -7,7 +7,7 @@ prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 3
 parallel_id: 3
 branch: "feature/current/prd-ai-analytics/story-03-003-filtering-timeseries"
-status: "todo"
+status: "done"
 assignee: ""
 reviewer: ""
 dependencies: ["01-003"]
