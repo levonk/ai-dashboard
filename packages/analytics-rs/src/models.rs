@@ -73,3 +73,19 @@ pub enum FilterOperator {
     In,
     NotIn,
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum TimeGranularity {
+    Minute,
+    Hour,
+    Day,
+    Week,
+    Month,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum InterpolationMethod {
+    Linear,
+    ForwardFill,
+    Zero,
+}

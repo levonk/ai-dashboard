@@ -54,7 +54,8 @@ fn bench_cost_calculation(c: &mut Criterion) {
         .collect();
 
     c.bench_function("cost_calculation_1000_events", |b| {
-        b.iter(|| CostCalculator::calculate_total_cost(black_box(&events)))
+        let calculator = CostCalculator::new();
+        b.iter(|| calculator.calculate_total_cost(black_box(&events)))
     });
 }
 

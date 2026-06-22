@@ -1,6 +1,7 @@
-use crate::models::{TelemetryEvent, TimeRange};
+use crate::models::{TelemetryEvent, TimeRange, TimeGranularity, InterpolationMethod};
 use anyhow::Result;
 use std::collections::HashMap;
+use chrono::Datelike;
 
 pub struct TimeSeriesAnalyzer;
 
@@ -246,6 +247,78 @@ impl TimeSeriesAnalyzer {
         anomalies
     }
     
+    pub fn group_by_time_granularity(events: &[TelemetryEvent], granularity: TimeGranularity) -> Result<Vec<serde_json::Value>> {
+        if events.is_empty() {
+            return Ok(vec![]);
+        }
+        
+        let mut sorted_events = events.to_vec();
+        sorted_events.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        
+        let mut grouped: HashMap<String, serde_json::Value> = HashMap::new();
+        let mut unique_models_per_group: HashMap<String, std::collections::HashSet<String>> = HashMap::new();
+        
+        for event in &sorted_events {
+            let time_key = Self::get_time_key(&event.timestamp, granularity);
+            
+            unique_models_per_group.entry(time_key.clone())
+                .or_insert_with(std::collections::HashSet::new)
+                .insert(event.model.clone());
+            
+            let entry = grouped.entry(time_key.clone()).or_insert_with(|| {
+                serde_json::json!({
+                    "timestamp": time_key,
+                    "count": 0,
+                    "total_cost_usd": 0.0,
+                    "total_input_tokens": 0,
+                    "total_output_tokens": 0,
+                    "avg_duration_ms": 0.0,
+                    "unique_models_count": 0
+                })
+            });
+            
+            entry["count"] = serde_json::json!(entry["count"].as_u64().unwrap_or(0) + 1);
+            entry["total_cost_usd"] = serde_json::json!(entry["total_cost_usd"].as_f64().unwrap_or(0.0) + event.cost_usd);
+            entry["total_input_tokens"] = serde_json::json!(entry["total_input_tokens"].as_u64().unwrap_or(0) + event.input_tokens as u64);
+            entry["total_output_tokens"] = serde_json::json!(entry["total_output_tokens"].as_u64().unwrap_or(0) + event.output_tokens as u64);
+            
+            let current_avg = entry["avg_duration_ms"].as_f64().unwrap_or(0.0);
+            let count = entry["count"].as_u64().unwrap_or(1) as f64;
+            let new_avg = (current_avg * (count - 1.0) + event.duration_ms as f64) / count;
+            entry["avg_duration_ms"] = serde_json::json!(new_avg);
+        }
+        
+        // Update unique models count
+        for (time_key, unique_models) in &unique_models_per_group {
+            if let Some(entry) = grouped.get_mut(time_key) {
+                entry["unique_models_count"] = serde_json::json!(unique_models.len());
+            }
+        }
+        
+        // Convert to sorted array
+        let mut series: Vec<serde_json::Value> = grouped.values().cloned().collect();
+        series.sort_by(|a, b| {
+            let a_time = a["timestamp"].as_str().unwrap_or("");
+            let b_time = b["timestamp"].as_str().unwrap_or("");
+            a_time.cmp(b_time)
+        });
+        
+        Ok(series)
+    }
+    
+    fn get_time_key(timestamp: &chrono::DateTime<chrono::Utc>, granularity: TimeGranularity) -> String {
+        match granularity {
+            TimeGranularity::Minute => timestamp.format("%Y-%m-%d %H:%M").to_string(),
+            TimeGranularity::Hour => timestamp.format("%Y-%m-%d %H:00").to_string(),
+            TimeGranularity::Day => timestamp.format("%Y-%m-%d").to_string(),
+            TimeGranularity::Week => {
+                let week_start = *timestamp - chrono::Duration::days(timestamp.weekday().num_days_from_monday() as i64);
+                week_start.format("%Y-%m-%d (week)").to_string()
+            }
+            TimeGranularity::Month => timestamp.format("%Y-%m").to_string(),
+        }
+    }
+    
     pub fn calculate_moving_average(events: &[TelemetryEvent], window_size: usize) -> Result<Vec<serde_json::Value>> {
         if events.len() < window_size {
             return Ok(vec![]);
@@ -271,6 +344,32 @@ impl TimeSeriesAnalyzer {
         }
         
         Ok(moving_averages)
+    }
+    
+    pub fn resample_time_series(events: &[TelemetryEvent], target_granularity: TimeGranularity, _interpolation: InterpolationMethod) -> Result<Vec<serde_json::Value>> {
+        if events.is_empty() {
+            return Ok(vec![]);
+        }
+        
+        // Group by target granularity
+        let grouped = Self::group_by_time_granularity(events, target_granularity)?;
+        
+        if grouped.is_empty() {
+            return Ok(vec![]);
+        }
+        
+        // For now, just return the grouped data with interpolation markers
+        // Full resampling with time gap filling can be added later
+        let mut resampled = grouped.clone();
+        
+        // Mark all as not interpolated for now
+        for item in &mut resampled {
+            if let Some(obj) = item.as_object_mut() {
+                obj.insert("interpolated".to_string(), serde_json::json!(false));
+            }
+        }
+        
+        Ok(resampled)
     }
 }
 

@@ -22,7 +22,7 @@ pub use image_tokens::{ImageTokenEstimator, ImageMetadata, ImageFormat, ImageDet
 pub use input_type::InputTypeDetector;
 pub use media_tokens::{AudioTokenEstimator, VideoTokenEstimator, AudioMetadata, VideoMetadata, AudioFormat, VideoFormat};
 pub use metadata::{Metadata, ValidationResult, validate_metadata, MetadataMigrator, MigrationError, MetadataEnricher, EnrichmentError};
-pub use models::{TelemetryEvent, AnalyticsQuery, AnalyticsResult, Filter};
+pub use models::{TelemetryEvent, AnalyticsQuery, AnalyticsResult, Filter, FilterOperator, TimeGranularity, InterpolationMethod, TimeRange};
 pub use pricing_data::{PricingDataUpdate, PricingDataValidation, validate_pricing_data};
 pub use processing::Processor;
 pub use time_series::TimeSeriesAnalyzer;

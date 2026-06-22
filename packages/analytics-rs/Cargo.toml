@@ -23,3 +23,11 @@ harness = false
 [[bench]]
 name = "aggregation"
 harness = false
+
+[[bench]]
+name = "filtering"
+harness = false
+
+[[bench]]
+name = "time_series"
+harness = false
