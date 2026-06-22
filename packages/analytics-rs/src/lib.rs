@@ -1,4 +1,5 @@
 pub mod aggregation;
+pub mod alerts;
 pub mod cost;
 pub mod filtering;
 pub mod hashing;
@@ -7,6 +8,7 @@ pub mod input_type;
 pub mod media_tokens;
 pub mod metadata;
 pub mod models;
+pub mod notifications;
 pub mod pricing_data;
 pub mod processing;
 pub mod time_series;
@@ -15,6 +17,14 @@ pub mod token_registry;
 pub mod tokens;
 
 pub use aggregation::Aggregator;
+pub use alerts::{
+    AlertRule, AlertCondition, AlertEvent, AlertSeverity, NotificationChannel,
+    ChannelType, ChannelConfig, ComparisonOperator, LogicalOperator, TimeWindow,
+    AggregationType, AnomalySensitivity, EvaluationResult, AlertStatistics,
+    RuleValidationResult
+};
+pub use alerts::storage::{AlertStorage, StorageError};
+pub use notifications::{NotificationManager, NotificationError, NotificationSender};
 pub use cost::{CostCalculator, PricingModel, PricingDatabase, ProviderConfig, CostBreakdown, BudgetAlert, CostOptimizationSuggestion};
 pub use filtering::FilterEngine;
 pub use hashing::{content_hash, structured_hash, correlation_id, HashCollisionMonitor};

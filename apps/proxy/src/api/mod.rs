@@ -1,3 +1,5 @@
+pub mod alerts;
+
 use axum::{Json, response::IntoResponse};
 use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};

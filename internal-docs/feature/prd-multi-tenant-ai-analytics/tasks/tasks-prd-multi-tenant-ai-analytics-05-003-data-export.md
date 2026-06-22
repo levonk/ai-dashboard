@@ -7,7 +7,7 @@ prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 5
 parallel_id: 3
 branch: "feature/current/prd-multi-tenant-ai-analytics/story-05-003-data-export"
-status: "todo"
+status: "done"
 assignee: ""
 reviewer: ""
 dependencies: ["04-002", "05-002"]
@@ -27,39 +27,42 @@ Implement bulk data export capabilities for external analysis and compliance req
 
 ## Sub-Tasks
 
-- [ ] Design export job system and queue — target: src/export/jobs.ts
-- [ ] Implement CSV export functionality — target: src/export/formats/csv.ts
-- [ ] Create JSON export with schema validation — target: src/export/formats/json.ts
-- [ ] Add PDF report generation — target: src/export/formats/pdf.ts
-- [ ] Implement export filtering and customization — target: src/export/filters.ts
-- [ ] Create export job management and monitoring — target: src/export/management.ts
-- [ ] Add export delivery mechanisms (download, email, S3) — target: src/export/delivery.ts
-- [ ] Implement export data sanitization for privacy — target: src/export/privacy.ts
-- [ ] **Note**: ToonFormat support for AI agent bulk export moved to story 04-004
+- [x] Design export job system and queue — target: apps/web/src/export/jobs.ts
+- [x] Implement CSV export functionality — target: apps/web/src/export/formats/csv.ts
+- [x] Create JSON export with schema validation — target: apps/web/src/export/formats/json.ts
+- [x] Add PDF report generation — target: apps/web/src/export/formats/pdf.ts
+- [x] Implement export filtering and customization — target: apps/web/src/export/filters.ts
+- [x] Create export job management and monitoring — target: apps/web/src/export/management.ts
+- [x] Add export delivery mechanisms (download, email, S3) — target: apps/web/src/export/delivery.ts
+- [x] Implement export data sanitization for privacy — target: apps/web/src/export/privacy.ts
+- [x] Update API endpoints to integrate export system — target: apps/web/src/api/domains/export.ts
+- [x] **Note**: ToonFormat support for AI agent bulk export moved to story 05-004
 
 ## Relevant Files
 
-- `src/export/jobs.ts` — Export job system
-- `src/export/formats/csv.ts` — CSV export
-- `src/export/formats/json.ts` — JSON export
-- `src/export/formats/pdf.ts` — PDF export
-- `src/export/filters.ts` — Export filtering
-- `src/export/management.ts` — Job management
-- `src/export/delivery.ts` — Delivery mechanisms
-- `src/export/privacy.ts` — Data sanitization
-- `test/export/` — Export tests
-- `docs/export-guide.md` — Export documentation
+- `apps/web/src/export/jobs.ts` — Export job system with queue management
+- `apps/web/src/export/formats/csv.ts` — CSV export with Excel compatibility
+- `apps/web/src/export/formats/json.ts` — JSON export with schema validation
+- `apps/web/src/export/formats/pdf.ts` — PDF report generation
+- `apps/web/src/export/filters.ts` — Export filtering and customization
+- `apps/web/src/export/management.ts` — Job management and monitoring
+- `apps/web/src/export/delivery.ts` — Delivery mechanisms (download, email, S3)
+- `apps/web/src/export/privacy.ts` — Data sanitization for privacy
+- `apps/web/src/export/index.ts` — Export module index with type exports
+- `apps/web/src/api/domains/export.ts` — Updated export API endpoints
+- `apps/web/src/processing/dashboard/export.ts` — Existing dashboard export utilities
+- `docs/export-guide.md` — Comprehensive export documentation
 
 ## Acceptance Criteria
 
-- [ ] Export system supports CSV, JSON, and PDF formats
-- [ ] Large exports are processed asynchronously via job queue
-- [ ] Export filtering allows custom data selection
-- [ ] Job management provides status tracking and history
-- [ ] Delivery mechanisms support multiple destinations
-- [ ] Data sanitization removes sensitive information
-- [ ] Export performance handles large datasets efficiently
-- [ ] Documentation provides clear export examples
+- [x] Export system supports CSV, JSON, and PDF formats
+- [x] Large exports are processed asynchronously via job queue
+- [x] Export filtering allows custom data selection
+- [x] Job management provides status tracking and history
+- [x] Delivery mechanisms support multiple destinations
+- [x] Data sanitization removes sensitive information
+- [x] Export performance handles large datasets efficiently
+- [x] Documentation provides clear export examples
 
 ## Test Plan
 

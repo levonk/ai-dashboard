@@ -43,16 +43,16 @@ This index provides a summary of all implementation stories for the AI Analytics
 | -------- | ----------- | ------ | ------------ | ------------- | ------- |
 | 05-001 | Dashboard UI Framework | feature/current/prd-ai-analytics/story-05-001-dashboard-framework | 04-001, 04-002, 04-003 | [x] Done | Parallel-safe: true | frontend, dashboard |
 | 05-002 | REST API Implementation | feature/current/prd-ai-analytics/story-05-002-rest-api | 04-001, 04-002, 04-003 | [x] Done | Parallel-safe: true | api, backend |
-| 05-003 | Data Export Capabilities | feature/current/prd-ai-analytics/story-05-003-data-export | 04-002, 05-002 | Parallel-safe: true | api, export |
+| 05-003 | Data Export Capabilities | feature/current/prd-ai-analytics/story-05-003-data-export | 04-002, 05-002 | [x] Done | Parallel-safe: true | api, export |
 | 05-004 | Multi-Output Interface Support | feature/current/prd-ai-analytics/story-05-004-multi-output-interface | 05-001, 05-002, 05-003 | Parallel-safe: true | api, frontend, export |
 
 ## Phase 06: Advanced Features
 
 | Story ID | Story Title | Branch | Dependencies | Parallel-safe | Modules |
 | -------- | ----------- | ------ | ------------ | ------------- | ------- |
-| 06-001 | Alerting and Notification System | feature/current/prd-ai-analytics/story-06-001-alerting-system | 04-001, 05-002 | Parallel-safe: true | alerts, notifications |
-| 06-002 | Security and Authentication | feature/current/prd-ai-analytics/story-06-002-security-auth | 05-002 | Parallel-safe: true | security, auth |
-| 06-003 | Enterprise Emitter Mode Foundation | feature/current/prd-ai-analytics/story-06-003-emitter-mode | 01-004, 05-002 | Parallel-safe: false | proxy, architecture |
+| 06-001 | Alerting and Notification System | feature/current/prd-ai-analytics/story-06-001-alerting-system | 04-001, 05-002 | [x] Done | Parallel-safe: true | alerts, notifications |
+| 06-002 | Security and Authentication | feature/current/prd-ai-analytics/story-06-002-security-auth | 05-002 | [ ] Todo | Parallel-safe: true | security, auth |
+| 06-003 | Enterprise Emitter Mode Foundation | feature/current/prd-ai-analytics/story-06-003-emitter-mode | 01-004, 05-002 | [ ] Todo | Parallel-safe: false | proxy, architecture |
 
 ## Summary Statistics
 
