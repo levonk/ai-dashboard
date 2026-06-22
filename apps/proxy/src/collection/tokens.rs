@@ -44,7 +44,8 @@ impl TokenCollector {
         input_tokens: u32,
         output_tokens: u32,
     ) -> Result<f64> {
-        CostCalculator::estimate_cost(provider, model, input_tokens, output_tokens)
+        let cost_calculator = CostCalculator::new();
+        cost_calculator.estimate_cost(provider, model, input_tokens, output_tokens, "text")
     }
 
     /// Extract and count tokens from request
@@ -113,11 +114,13 @@ impl TokenCollector {
         model: &str,
         token_count: &TokenCount,
     ) -> Result<f64> {
-        CostCalculator::estimate_cost(
+        let cost_calculator = CostCalculator::new();
+        cost_calculator.estimate_cost(
             provider,
             model,
             token_count.input_tokens,
             token_count.output_tokens,
+            "text",
         )
     }
 }

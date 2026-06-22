@@ -27,8 +27,8 @@ Implement the foundation for enterprise emitter mode in the proxy service. This 
 
 ## Sub-Tasks
 
-- [ ] Design emitter mode architecture and data flow — target: apps/proxy/src/emitter/README.md
-- [ ] Implement event emission protocol and serialization — target: apps/proxy/src/emitter/protocol.rs
+- [x] Design emitter mode architecture and data flow — target: apps/proxy/src/emitter/README.md
+- [x] Implement event emission protocol and serialization — target: apps/proxy/src/emitter/protocol.rs
 - [ ] Create emitter client for external collector communication — target: apps/proxy/src/emitter/client.rs
 - [ ] Implement message queue integration (Redis/Kafka) — target: apps/proxy/src/emitter/queue.rs
 - [ ] Add emitter mode configuration and startup logic — target: apps/proxy/src/config/emitter.rs

@@ -12,8 +12,8 @@ impl AnalyticsProcessor {
     pub fn new() -> Self {
         Self {
             processor: Processor,
-            aggregator: Aggregator,
-            cost_calculator: CostCalculator,
+            aggregator: Aggregator::new(),
+            cost_calculator: CostCalculator::new(),
             filter_engine: FilterEngine,
         }
     }
@@ -29,12 +29,12 @@ impl AnalyticsProcessor {
     }
 
     pub fn calculate_costs(&self, events: &[TelemetryEvent]) -> Result<f64> {
-        CostCalculator::calculate_total_cost(events)
+        self.cost_calculator.calculate_total_cost(events)
     }
 
     pub fn aggregate_metrics(&self, events: &[TelemetryEvent], query: &AnalyticsQuery) -> Result<serde_json::Value> {
         let filtered_events = FilterEngine::apply(events, &query.filters)?;
-        Aggregator::aggregate(&filtered_events, query)
+        self.aggregator.aggregate(&filtered_events, query)
     }
 }
 
