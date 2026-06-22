@@ -1,4 +1,4 @@
-use super::{AlertRule, AlertEvent, AlertStatistics, ComparisonOperator, TimeWindow, AggregationType, AlertSeverity};
+use super::{AlertRule, AlertEvent, AlertStatistics};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use chrono::{DateTime, Utc};
