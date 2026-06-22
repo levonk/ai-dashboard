@@ -12,28 +12,32 @@ AI Dashboard is a comprehensive analytics platform for AI usage across multiple 
 
 ## Development Commands
 
-**IMPORTANT:** All commands must be prefixed with `devbox run --` to ensure they run within the devbox environment. This is critical for consistent tooling and dependencies.
+**IMPORTANT:** This project follows the Standard Developer UX Flow (ADR-20260131001). AI agents should use `devbox run just x-internal` for automated operations, while human developers can use `just x` for convenience.
 
-### Root-level Commands
+### AI Agent Commands (Automated)
 
 ```bash
-# Build all projects
-devbox run -- nx run-many -t build
+# Core development commands (AI agents use these)
+devbox run just build-internal      # Build all projects
+devbox run just test-internal       # Run all tests
+devbox run just lint-internal       # Lint all projects
+devbox run just typecheck-internal  # Type check all projects
+devbox run just dev-internal        # Start all dev servers
+devbox run just quality             # Run quality gates (lint + test + typecheck)
+devbox run just ci                  # Run CI pipeline locally
+```
 
-# Development mode (all projects)
-devbox run -- nx run-many -t dev
+### Human Developer Commands (Convenient)
 
-# Lint all projects
-devbox run -- nx run-many -t lint
-
-# Type check all projects
-devbox run -- nx run-many -t typecheck
-
-# Clean all projects
-devbox run -- nx run-many -t clean
-
-# Format all projects
-devbox run -- prettier --write "**/*.{ts,tsx,js,jsx,json,md,css}" && nx run-many -t format
+```bash
+# Human developers can use these simpler commands
+just build      # Build all projects
+just test       # Run all tests
+just lint       # Lint all projects
+just typecheck  # Type check all projects
+just dev        # Start all dev servers
+just quality    # Run quality gates
+just ci         # Run CI pipeline locally
 ```
 
 ### Project-specific Commands
@@ -41,73 +45,80 @@ devbox run -- prettier --write "**/*.{ts,tsx,js,jsx,json,md,css}" && nx run-many
 #### Proxy Service (Rust)
 
 ```bash
-# Navigate to proxy directory first
-cd apps/proxy
+# AI agent commands
+devbox run just proxy-build
+devbox run just proxy-test
+devbox run just proxy-lint
+devbox run just proxy-fmt
+devbox run just proxy-run
+devbox run just proxy-serve
 
-# Build proxy
-devbox run -- cargo build --release
-
-# Run proxy
-devbox run -- cargo run
-
-# Run proxy in serve mode
-devbox run -- cargo run -- serve
-
-# Test proxy
-devbox run -- cargo test
-
-# Lint proxy
-devbox run -- cargo clippy -- -D warnings
-
-# Format proxy
-devbox run -- cargo fmt
-
-# Type check proxy
-devbox run -- cargo check
+# Human developer commands
+just proxy-build
+just proxy-test
+just proxy-lint
+just proxy-fmt
+just proxy-run
+just proxy-serve
 ```
 
 #### Web Application (Next.js)
 
 ```bash
-# Navigate to web directory first
-cd apps/web
+# AI agent commands
+devbox run just web-build
+devbox run just web-dev
+devbox run just web-test
+devbox run just web-lint
+devbox run just web-typecheck
 
-# Build web
-devbox run -- nx build web
-
-# Development server
-devbox run -- nx dev web
-
-# Production server
-devbox run -- nx start web
-
-# Lint web
-devbox run -- nx lint web
-
-# Type check web
-devbox run -- nx typecheck web
+# Human developer commands
+just web-build
+just web-dev
+just web-test
+just web-lint
+just web-typecheck
 ```
 
 #### Analytics Package (Rust)
 
 ```bash
-# Navigate to analytics-rs directory first
-cd packages/analytics-rs
+# AI agent commands
+devbox run just analytics-build
+devbox run just analytics-test
+devbox run just analytics-lint
+devbox run just analytics-fmt
+devbox run just analytics-bench
 
-# Build analytics package
-devbox run -- cargo build --release
+# Human developer commands
+just analytics-build
+just analytics-test
+just analytics-lint
+just analytics-fmt
+just analytics-bench
+```
 
-# Test analytics package
-devbox run -- cargo test
+### Utility Commands
 
-# Lint analytics package
-devbox run -- cargo clippy -- -D warnings
+```bash
+# Bootstrap and environment setup
+devbox run just bootstrap-internal    # Install dependencies
+devbox run just prime-internal        # Prime code indexing
 
-# Format analytics package
-devbox run -- cargo fmt
+# Health and diagnostics
+devbox run just doctor-internal       # Check environment health
 
-# Type check analytics package
-devbox run -- cargo check
+# Cleanup
+devbox run just clean-internal        # Remove build artifacts
+devbox run just clean-all-internal    # Remove all artifacts and dependencies
+
+# Formatting
+devbox run just format                # Format all projects
+devbox run just format-check          # Check formatting
+
+# Deployment
+devbox run just deploy                # Deploy to production
+devbox run just deploy-staging        # Deploy to staging
 ```
 
 ## Project Structure
@@ -142,11 +153,15 @@ ai-dashboard/
 
 ## Development Workflow
 
-1. **Always use `devbox run --` prefix** for all commands
-2. Work in the appropriate app/package directory for project-specific commands
-3. Use root-level Nx commands for multi-project operations
-4. Follow the PRD task structure in `internal-docs/feature/prd-multi-tenant-ai-analytics/tasks/`
-5. Reference individual app-specific AGENTS.md files when available (currently none exist)
+This project follows the Standard Developer UX Flow (ADR-20260131001):
+
+1. **AI Agents**: Use `devbox run just x-internal` for automated operations
+2. **Human Developers**: Use `just x` for convenient one-off commands
+3. **Power Users**: Use `just x-internal` directly when already in devbox shell
+4. **Environment**: Devbox with direnv for automatic environment activation
+5. **Quality Gates**: Run `just quality` before committing changes
+6. **PRD Implementation**: Follow the PRD task structure in `internal-docs/feature/prd-multi-tenant-ai-analytics/tasks/`
+7. **Reference**: Individual app-specific AGENTS.md files when available (currently none exist)
 
 ## PRD Implementation
 
@@ -158,19 +173,25 @@ The project follows a structured PRD implementation process:
 
 ## Testing
 
-- Run tests with `devbox run -- nx run-many -t test` for all projects
-- Run project-specific tests by navigating to the project directory first
+- Run tests with `devbox run just test-internal` for all projects (AI agents)
+- Run tests with `just test` for all projects (human developers)
+- Run project-specific tests: `just proxy-test`, `just web-test`, `just analytics-test`
 - Always ensure tests pass before committing changes
 
 ## Code Quality
 
-- **Linting:** `devbox run -- nx run-many -t lint` (zero warnings policy)
-- **Type Checking:** `devbox run -- nx run-many -t typecheck`
-- **Formatting:** `devbox run -- prettier --write "**/*.{ts,tsx,js,jsx,json,md,css}" && nx run-many -t format`
+- **Quality Gates:** `devbox run just quality` or `just quality` (runs lint + test + typecheck)
+- **Linting:** `devbox run just lint-internal` or `just lint` (zero warnings policy)
+- **Type Checking:** `devbox run just typecheck-internal` or `just typecheck`
+- **Formatting:** `devbox run just format` or `just format`
+- **Format Check:** `devbox run just format-check` or `just format-check`
 
 ## Notes
 
-- This project uses devbox for environment management - never skip the `devbox run --` prefix
+- This project follows ADR-20260131001 Standard Developer UX Flow
+- AI agents use `devbox run just x-internal` for automated operations
+- Human developers use `just x` for convenient one-off commands
+- Devbox with direnv provides automatic environment activation
 - Individual apps/packages may have their own AGENTS.md files in the future (currently none exist)
-- Always check the project.json files for the correct command structure
-- The proxy service uses Just for additional command aliases - check the justfile for more options
+- Use `just --list` to see all available commands
+- Use `just doctor` to check environment health

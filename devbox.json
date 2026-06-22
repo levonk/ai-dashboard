@@ -7,7 +7,9 @@
     "rust",
     "rust-analyzer",
     "just",
-    "prettier"
+    "prettier",
+    "ripgrep",
+    "fd"
   ],
   "shell": {
     "init_hook": [
