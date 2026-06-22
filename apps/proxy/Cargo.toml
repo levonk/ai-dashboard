@@ -32,6 +32,7 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 gethostname = "0.4"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "process", "fs", "io-util", "time", "net"] }
 futures-util = "0.3"
+futures = "0.3"
 axum = { version = "0.7", features = ["tokio", "macros"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["trace", "cors", "compression-gzip"] }

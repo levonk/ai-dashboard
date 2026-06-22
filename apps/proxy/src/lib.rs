@@ -27,6 +27,7 @@ pub mod validation;
 pub mod routing;
 pub mod telemetry;
 pub mod analytics_mode;
+pub mod emitter;
 pub mod sdk;
 pub mod collection;
 pub mod middleware;
