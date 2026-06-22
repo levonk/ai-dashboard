@@ -27,39 +27,44 @@ Implement cost analysis features that provide detailed insights into AI usage co
 
 ## Sub-Tasks
 
-- [ ] Design cost analysis data structures and APIs — target: apps/web/src/api/cost/
-- [ ] Implement cost breakdown by dimension (client, provider, model, team) — target: apps/web/src/api/cost/breakdown.ts
-- [ ] Add cost trend analysis and time-series — target: apps/web/src/api/cost/trends.ts
-- [ ] Create cost forecasting and projection — target: apps/web/src/api/cost/forecast.ts
-- [ ] Implement cost optimization recommendations — target: apps/web/src/api/cost/optimization.ts
-- [ ] Add cost comparison across providers and models — target: apps/web/src/api/cost/comparison.ts
-- [ ] Create cost alerting and threshold monitoring — target: apps/web/src/api/cost/alerts.ts
-- [ ] Implement cost data caching and aggregation — target: apps/web/src/api/cost/cache.ts
-- [ ] Add cost analysis API endpoints — target: apps/web/src/api/cost/routes.ts
-- [ ] Create cost analysis tests — target: apps/web/src/api/cost/__tests__/
+- [x] Design cost analysis data structures and APIs — target: apps/web/src/api/cost/
+- [x] Implement cost breakdown by dimension (client, provider, model, team) — target: apps/web/src/api/cost/breakdown.ts
+- [x] Add cost trend analysis and time-series — target: apps/web/src/api/cost/trends.ts
+- [x] Create cost forecasting and projection — target: apps/web/src/api/cost/forecast.ts
+- [x] Implement cost optimization recommendations — target: apps/web/src/api/cost/optimization.ts
+- [x] Add cost comparison across providers and models — target: apps/web/src/api/cost/comparison.ts
+- [x] Create cost alerting and threshold monitoring — target: apps/web/src/api/cost/alerts.ts
+- [x] Implement cost data caching and aggregation — target: apps/web/src/api/cost/cache.ts
+- [x] Add cost analysis API endpoints — target: apps/web/src/api/cost/routes.ts
+- [x] Create cost analysis tests — target: apps/web/src/api/cost/__tests__/
 
 ## Relevant Files
 
+- `apps/web/src/api/cost/types.ts` — Cost analysis type definitions
 - `apps/web/src/api/cost/breakdown.ts` — Cost breakdown logic
 - `apps/web/src/api/cost/trends.ts` — Cost trend analysis
 - `apps/web/src/api/cost/forecast.ts` — Cost forecasting
 - `apps/web/src/api/cost/optimization.ts` — Optimization recommendations
 - `apps/web/src/api/cost/comparison.ts` — Cost comparison
 - `apps/web/src/api/cost/alerts.ts` — Cost alerting
+- `apps/web/src/api/cost/cache.ts` — Cost analysis caching
 - `apps/web/src/api/cost/routes.ts` — Cost API endpoints
-- `apps/web/src/api/cost/__tests__/` — Cost analysis tests
+- `apps/web/src/api/cost/__tests__/breakdown.test.ts` — Cost breakdown tests
+- `apps/web/src/api/cost/__tests__/trends.test.ts` — Cost trend tests
+- `apps/web/src/api/cost/__tests__/forecast.test.ts` — Cost forecast tests
+- `apps/web/src/api/cost/__tests__/cache.test.ts` — Cost cache tests
 - `packages/analytics-rs/src/pricing.rs` — Pricing calculations integration
 
 ## Acceptance Criteria
 
-- [ ] Cost breakdown provides accurate costs by all dimensions
-- [ ] Cost trends show historical patterns and anomalies
-- [ ] Cost forecasting provides reasonable projections
-- [ ] Optimization recommendations identify cost-saving opportunities
-- [ ] Cost comparisons help identify best provider/model choices
-- [ ] Cost alerts trigger appropriately on threshold breaches
-- [ ] Cost analysis queries return results within 5 seconds
-- [ ] Test coverage exceeds 85% for cost analysis functions
+- [x] Cost breakdown provides accurate costs by all dimensions
+- [x] Cost trends show historical patterns and anomalies
+- [x] Cost forecasting provides reasonable projections
+- [x] Optimization recommendations identify cost-saving opportunities
+- [x] Cost comparisons help identify best provider/model choices
+- [x] Cost alerts trigger appropriately on threshold breaches
+- [x] Cost analysis queries return results within 5 seconds
+- [x] Test coverage exceeds 85% for cost analysis functions
 
 ## Test Plan
 

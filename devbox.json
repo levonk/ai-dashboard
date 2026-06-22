@@ -1,10 +1,10 @@
 {
   "packages": [
-    "nodejs",
-    "pnpm",
-    "nx",
+    "github:levonk/levonk-packages#bundle-rtk-core",
+    "github:levonk/levonk-packages#bundle-rtk-cloud",
+    "github:levonk/levonk-packages#bundle-devbox-auto-rust",
+    "github:levonk/levonk-packages#devbox-rtk-nodejs-pnpm-force",
     "typescript-language-server",
-    "rust",
     "rust-analyzer",
     "just",
     "prettier",
@@ -17,23 +17,20 @@
     ]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "prime": "just prime-internal",
-    "doctor": "just doctor-internal",
-    "clean": "just clean-internal",
-    "clean-all": "just clean-all-internal",
-    "build": "just build-internal",
-    "lint": "just lint-internal",
-    "test": "just test-internal",
-    "typecheck": "just typecheck-internal",
-    "dev": "just dev-internal",
-    "quality": "just quality",
-    "format": "just format",
+    "bootstrap":    "just bootstrap-internal",
+    "prime":        "just prime-internal",
+    "doctor":       "just doctor-internal",
+    "clean":        "just clean-internal",
+    "clean-all":    "just clean-all-internal",
+    "build":        "just build-internal",
+    "lint":         "just lint-internal",
+    "test":         "just test-internal",
+    "typecheck":    "just typecheck-internal",
+    "dev":          "just dev-internal",
+    "quality":      "just quality",
+    "format":       "just format",
     "format-check": "just format-check",
-    "ci": "just ci",
-    "ci-full": "just ci-full"
-  },
-  "nix_pkgs": [
-    "just"
-  ]
+    "ci":           "just ci",
+    "ci-full":      "just ci-full"
+  }
 }
