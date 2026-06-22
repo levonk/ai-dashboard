@@ -24,7 +24,10 @@
     "tailwind-merge": "*",
     "tailwindcss": "*",
     "typescript": "*",
-    "zod": "*"
+    "zod": "*",
+    "@radix-ui/react-select": "*",
+    "@radix-ui/react-dialog": "*",
+    "recharts": "*"
   },
   "devDependencies": {
     "@types/node": "*",

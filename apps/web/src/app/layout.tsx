@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Next.js App",
-  description: "Next.js 16 App Router boilerplate",
+  title: "AI Analytics Dashboard",
+  description: "Single-tenant open-source analytics system for AI usage tracking",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
