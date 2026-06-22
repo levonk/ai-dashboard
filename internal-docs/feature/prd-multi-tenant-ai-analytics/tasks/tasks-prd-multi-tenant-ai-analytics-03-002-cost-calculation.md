@@ -7,7 +7,7 @@ prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 3
 parallel_id: 2
 branch: "feature/current/prd-ai-analytics/story-03-002-cost-calculation"
-status: "todo"
+status: "in-progress"
 assignee: ""
 reviewer: ""
 dependencies: ["01-003"]
@@ -27,36 +27,36 @@ Implement multi-provider cost calculation engine in the analytics-rs package wit
 
 ## Sub-Tasks
 
-- [ ] Design pricing data model and update system — target: packages/analytics-rs/src/cost.rs
-- [ ] Implement provider-specific pricing (Anthropic, OpenAI, Google, etc.) — target: packages/analytics-rs/src/cost.rs
-- [ ] Add model-specific cost calculation — target: packages/analytics-rs/src/cost.rs
-- [ ] Implement input type cost factors (text, image, audio) — target: packages/analytics-rs/src/cost.rs
-- [ ] Create cost aggregation functions — target: packages/analytics-rs/src/cost.rs
-- [ ] Add budget monitoring and alerting — target: packages/analytics-rs/src/cost.rs
-- [ ] Implement cost optimization suggestions — target: packages/analytics-rs/src/cost.rs
-- [ ] Create pricing data update mechanism — target: packages/analytics-rs/src/cost.rs
-- [ ] Add cost calculation tests — target: packages/analytics-rs/tests/cost/
-- [ ] Create pricing data validation — target: packages/analytics-rs/tests/cost/pricing_data.rs
+- [x] Design pricing data model and update system — target: packages/analytics-rs/src/cost.rs
+- [x] Implement provider-specific pricing (Anthropic, OpenAI, Google, etc.) — target: packages/analytics-rs/src/cost.rs
+- [x] Add model-specific cost calculation — target: packages/analytics-rs/src/cost.rs
+- [x] Implement input type cost factors (text, image, audio) — target: packages/analytics-rs/src/cost.rs
+- [x] Create cost aggregation functions — target: packages/analytics-rs/src/cost.rs
+- [x] Add budget monitoring and alerting — target: packages/analytics-rs/src/cost.rs
+- [x] Implement cost optimization suggestions — target: packages/analytics-rs/src/cost.rs
+- [x] Create pricing data update mechanism — target: packages/analytics-rs/src/cost.rs
+- [x] Add cost calculation tests — target: packages/analytics-rs/tests/cost/
+- [x] Create pricing data validation — target: packages/analytics-rs/tests/cost/pricing_data.rs
 
 ## Relevant Files
 
-- `packages/analytics-rs/src/cost.rs` — Cost calculation engine
-- `packages/analytics-rs/src/pricing_data.rs` — Pricing data structures
-- `packages/analytics-rs/tests/cost/` — Cost calculation tests
-- `docs/calculation-guide.md` — Cost calculation guide
-- `docs/pricing-data-format.md` — Pricing data format documentation
+- `packages/analytics-rs/src/cost.rs` — Cost calculation engine (expanded with pricing data model, provider-specific pricing, model-specific costs, input type factors, cost aggregation, budget monitoring, optimization suggestions, and pricing data update mechanism)
+- `packages/analytics-rs/src/pricing_data.rs` — Pricing data structures and validation (new file)
+- `packages/analytics-rs/tests/cost_test.rs` — Cost calculation tests (new file with 16 comprehensive tests)
+- `packages/analytics-rs/src/lib.rs` — Updated exports for new cost-related types
+- `packages/analytics-rs/src/processing.rs` — Updated to use new CostCalculator instance methods
 
 ## Acceptance Criteria
 
-- [ ] Cost calculations are accurate within 0.1% of provider pricing
-- [ ] All major providers supported (Anthropic, OpenAI, Google, Microsoft, AWS, OpenRouter)
-- [ ] Model-specific pricing handles different input/output token costs
-- [ ] Input type cost factors correctly apply for text, image, audio
-- [ ] Cost aggregation works across all dimensions (client, provider, model, team)
-- [ ] Budget monitoring alerts trigger at configured thresholds
-- [ ] Cost optimization suggestions provide actionable recommendations
-- [ ] Pricing data can be updated without code changes
-- [ ] Test coverage exceeds 90% for cost calculation functions
+- [x] Cost calculations are accurate within 0.1% of provider pricing
+- [x] All major providers supported (Anthropic, OpenAI, Google, Microsoft, AWS, OpenRouter)
+- [x] Model-specific pricing handles different input/output token costs
+- [x] Input type cost factors correctly apply for text, image, audio
+- [x] Cost aggregation works across all dimensions (client, provider, model, team)
+- [x] Budget monitoring alerts trigger at configured thresholds
+- [x] Cost optimization suggestions provide actionable recommendations
+- [x] Pricing data can be updated without code changes
+- [x] Test coverage exceeds 90% for cost calculation functions
 
 ## Test Plan
 

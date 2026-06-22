@@ -156,14 +156,16 @@ fn test_cost_calculation() {
         }
     ];
 
-    let total_cost = CostCalculator::calculate_total_cost(&events);
+    let cost_calculator = CostCalculator::new();
+    let total_cost = cost_calculator.calculate_total_cost(&events);
     assert!(total_cost.is_ok());
     assert_eq!(total_cost.unwrap(), 0.01);
 }
 
 #[test]
 fn test_cost_estimation() {
-    let estimated_cost = CostCalculator::estimate_cost("anthropic", "claude-3-opus", 1000, 500);
+    let cost_calculator = CostCalculator::new();
+    let estimated_cost = cost_calculator.estimate_cost("anthropic", "claude-3-opus", 1000, 500, "text");
     assert!(estimated_cost.is_ok());
     // Anthropic Claude-3 Opus: $15/1k input tokens, $75/1k output tokens
     // 1000 input tokens = $15.0, 500 output tokens = $37.5, total = $52.5
@@ -202,7 +204,8 @@ fn test_cost_by_provider() {
         }
     ];
 
-    let costs_by_provider = CostCalculator::calculate_cost_by_provider(&events);
+    let cost_calculator = CostCalculator::new();
+    let costs_by_provider = cost_calculator.calculate_cost_by_provider(&events);
     assert!(costs_by_provider.is_ok());
     let costs = costs_by_provider.unwrap();
     assert_eq!(costs.get("anthropic").unwrap(), &0.01);

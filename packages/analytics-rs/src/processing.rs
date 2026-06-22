@@ -91,9 +91,10 @@ impl Processor {
         let filtered = FilterEngine::apply(&time_filtered, &query.filters)?;
         
         // Calculate cost breakdowns
-        let total_cost = CostCalculator::calculate_total_cost(&filtered)?;
-        let cost_by_provider = CostCalculator::calculate_cost_by_provider(&filtered)?;
-        let cost_by_model = CostCalculator::calculate_cost_by_model(&filtered)?;
+        let cost_calculator = CostCalculator::new();
+        let total_cost = cost_calculator.calculate_total_cost(&filtered)?;
+        let cost_by_provider = cost_calculator.calculate_cost_by_provider(&filtered)?;
+        let cost_by_model = cost_calculator.calculate_cost_by_model(&filtered)?;
         
         let query_duration = start_time.elapsed();
         
