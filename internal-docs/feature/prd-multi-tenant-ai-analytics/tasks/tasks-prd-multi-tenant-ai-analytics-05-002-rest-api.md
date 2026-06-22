@@ -7,7 +7,7 @@ prd_file: "docs/feature/prd-multi-tenant-ai-analytics.md"
 phase: 5
 parallel_id: 2
 branch: "feature/current/prd-ai-analytics/story-05-002-rest-api"
-status: "todo"
+status: "done"
 assignee: ""
 reviewer: ""
 dependencies: ["04-001", "04-002", "04-003"]
@@ -27,26 +27,28 @@ Implement comprehensive REST API for all analytics operations including querying
 
 ## Sub-Tasks
 
-- [ ] Design API architecture and endpoint structure — target: src/api/routes.ts
-- [ ] Implement authentication and authorization middleware — target: src/api/middleware/auth.ts
-- [ ] Create analytics query endpoints — target: src/api/endpoints/analytics.ts
-- [ ] Implement multi-dimensional filtering endpoints — target: src/api/endpoints/filters.ts
-- [ ] Add aggregation and trend analysis endpoints — target: src/api/endpoints/aggregation.ts
-- [ ] Create data export endpoints — target: src/api/endpoints/export.ts
-- [ ] Implement webhook management endpoints — target: src/api/endpoints/webhooks.ts
-- [ ] Add API documentation and OpenAPI specification — target: docs/api-spec.yaml
+- [x] Design API architecture and endpoint structure — target: src/api/routes.ts
+- [x] Implement authentication and authorization middleware — target: src/api/middleware/auth.ts
+- [x] Create analytics query endpoints — target: src/api/endpoints/analytics.ts
+- [x] Implement multi-dimensional filtering endpoints — target: src/api/endpoints/filters.ts
+- [x] Add aggregation and trend analysis endpoints — target: src/api/endpoints/aggregation.ts
+- [x] Create data export endpoints — target: src/api/endpoints/export.ts
+- [x] Implement webhook management endpoints — target: src/api/endpoints/webhooks.ts
+- [x] Add API documentation and OpenAPI specification — target: docs/api-spec.yaml
 
 ## Relevant Files
 
-- `src/api/routes.ts` — API route definitions
-- `src/api/middleware/auth.ts` — Authentication middleware
-- `src/api/endpoints/analytics.ts` — Analytics query endpoints
-- `src/api/endpoints/filters.ts` — Filtering endpoints
-- `src/api/endpoints/aggregation.ts` — Aggregation endpoints
-- `src/api/endpoints/export.ts` — Export endpoints
-- `src/api/endpoints/webhooks.ts` — Webhook management
+- `apps/web/src/api/routes.ts` — Central API route definitions and architecture
+- `apps/web/src/api/domains/analytics.ts` — Analytics query endpoints
+- `apps/web/src/api/domains/cost.ts` — Cost analysis endpoints
+- `apps/web/src/api/domains/filters.ts` — Multi-dimensional filtering endpoints
+- `apps/web/src/api/domains/aggregation.ts` — Aggregation and trend analysis endpoints
+- `apps/web/src/api/domains/export.ts` — Data export endpoints
+- `apps/web/src/api/domains/webhooks.ts` — Webhook management endpoints
+- `apps/web/src/api/middleware/auth.ts` — Authentication and authorization middleware
+- `apps/web/src/api/middleware/rate-limit.ts` — Rate limiting middleware
+- `apps/web/src/api/middleware/error-handler.ts` — Error handling middleware
 - `docs/api-spec.yaml` — OpenAPI specification
-- `test/api/` — API tests
 - `docs/api-guide.md` — API usage guide
 
 ## Acceptance Criteria

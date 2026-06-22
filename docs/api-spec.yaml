@@ -1,0 +1,1439 @@
+openapi: 3.0.3
+info:
+  title: AI Analytics Dashboard API
+  description: |
+    Comprehensive REST API for AI usage analytics across multiple dimensions:
+    company clients, AI clients, teams, pipeline stages, AI model suppliers, models, and input types.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@ai-dashboard.example.com
+  license:
+    name: AGPL 3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.en.html
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.ai-dashboard.example.com
+    description: Production server
+
+tags:
+  - name: analytics
+    description: Analytics query operations
+  - name: cost
+    description: Cost analysis operations
+  - name: filters
+    description: Multi-dimensional filtering
+  - name: aggregation
+    description: Aggregation and trend analysis
+  - name: export
+    description: Data export operations
+  - name: webhooks
+    description: Webhook management
+  - name: metadata
+    description: API metadata and health
+
+paths:
+  /api/analytics/query:
+    post:
+      tags:
+        - analytics
+      summary: Execute analytics query
+      description: Execute an analytics query with filtering and aggregation
+      operationId: executeAnalyticsQuery
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyticsQueryRequest'
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsQueryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/analytics/query/health:
+    get:
+      tags:
+        - analytics
+      summary: Analytics query health check
+      description: Health check for analytics query service
+      operationId: analyticsHealthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  /api/analytics/query/stats:
+    get:
+      tags:
+        - analytics
+      summary: Get analytics query statistics
+      description: Get analytics query system statistics
+      operationId: getAnalyticsStats
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/cost/breakdown:
+    post:
+      tags:
+        - cost
+      summary: Analyze cost breakdown
+      description: Analyze cost breakdown by dimensions
+      operationId: costBreakdown
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostBreakdownRequest'
+      responses:
+        '200':
+          description: Cost breakdown analyzed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostBreakdownResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/cost/trends:
+    post:
+      tags:
+        - cost
+      summary: Analyze cost trends
+      description: Analyze cost trends over time
+      operationId: costTrends
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostTrendsRequest'
+      responses:
+        '200':
+          description: Cost trends analyzed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostTrendsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/cost/forecast:
+    post:
+      tags:
+        - cost
+      summary: Generate cost forecast
+      description: Generate cost forecast based on historical data
+      operationId: costForecast
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostForecastRequest'
+      responses:
+        '200':
+          description: Cost forecast generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostForecastResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/cost/optimization:
+    post:
+      tags:
+        - cost
+      summary: Get optimization recommendations
+      description: Get cost optimization recommendations
+      operationId: costOptimization
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostOptimizationRequest'
+      responses:
+        '200':
+          description: Optimization recommendations generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostOptimizationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/cost/comparison:
+    post:
+      tags:
+        - cost
+      summary: Compare costs
+      description: Compare costs across dimensions
+      operationId: costComparison
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CostComparisonRequest'
+      responses:
+        '200':
+          description: Cost comparison completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostComparisonResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/cost/health:
+    get:
+      tags:
+        - cost
+      summary: Cost analysis health check
+      description: Health check for cost analysis service
+      operationId: costHealthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  /api/filters/dimensions:
+    get:
+      tags:
+        - filters
+      summary: Get available filter dimensions
+      description: Get available filter dimensions and their values
+      operationId: getFilterDimensions
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Filter dimensions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FilterDimensions'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/filters/validate:
+    post:
+      tags:
+        - filters
+      summary: Validate filter configuration
+      description: Validate filter configuration
+      operationId: validateFilter
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilterValidationRequest'
+      responses:
+        '200':
+          description: Filter validated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FilterValidationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/filters/saved:
+    get:
+      tags:
+        - filters
+      summary: List saved filters
+      description: List saved filter configurations
+      operationId: listSavedFilters
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Saved filters retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedFiltersList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - filters
+      summary: Save filter configuration
+      description: Save a filter configuration
+      operationId: saveFilter
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveFilterRequest'
+      responses:
+        '201':
+          description: Filter saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedFilter'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/filters/saved/{id}:
+    delete:
+      tags:
+        - filters
+      summary: Delete saved filter
+      description: Delete a saved filter configuration
+      operationId: deleteSavedFilter
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FilterId'
+      responses:
+        '200':
+          description: Filter deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteFilterResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/aggregation/functions:
+    get:
+      tags:
+        - aggregation
+      summary: Get aggregation functions
+      description: Get available aggregation functions
+      operationId: getAggregationFunctions
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Aggregation functions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AggregationFunctions'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/aggregation/execute:
+    post:
+      tags:
+        - aggregation
+      summary: Execute aggregation
+      description: Execute aggregation query
+      operationId: executeAggregation
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AggregationRequest'
+      responses:
+        '200':
+          description: Aggregation executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AggregationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/aggregation/trends:
+    post:
+      tags:
+        - aggregation
+      summary: Get aggregated trends
+      description: Get aggregated trend analysis
+      operationId: aggregationTrends
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AggregationTrendsRequest'
+      responses:
+        '200':
+          description: Aggregated trends retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AggregationTrendsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/export/execute:
+    post:
+      tags:
+        - export
+      summary: Execute data export
+      description: Execute data export
+      operationId: executeExport
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '200':
+          description: Export job created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/export/formats:
+    get:
+      tags:
+        - export
+      summary: Get export formats
+      description: Get available export formats
+      operationId: getExportFormats
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Export formats retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportFormats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/export/status/{id}:
+    get:
+      tags:
+        - export
+      summary: Get export status
+      description: Get export job status
+      operationId: getExportStatus
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: Export status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/export/download/{id}:
+    get:
+      tags:
+        - export
+      summary: Download export
+      description: Download exported data
+      operationId: downloadExport
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: Export file downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/webhooks:
+    get:
+      tags:
+        - webhooks
+      summary: List webhooks
+      description: List configured webhooks
+      operationId: listWebhooks
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Webhooks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - webhooks
+      summary: Create webhook
+      description: Create a new webhook
+      operationId: createWebhook
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookRequest'
+      responses:
+        '201':
+          description: Webhook created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/webhooks/{id}:
+    get:
+      tags:
+        - webhooks
+      summary: Get webhook
+      description: Get webhook details
+      operationId: getWebhook
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Webhook retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags:
+        - webhooks
+      summary: Update webhook
+      description: Update webhook configuration
+      operationId: updateWebhook
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWebhookRequest'
+      responses:
+        '200':
+          description: Webhook updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+        - webhooks
+      summary: Delete webhook
+      description: Delete a webhook
+      operationId: deleteWebhook
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Webhook deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteWebhookResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/webhooks/{id}/test:
+    post:
+      tags:
+        - webhooks
+      summary: Test webhook
+      description: Test webhook delivery
+      operationId: testWebhook
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Webhook test completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookTestResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/webhooks/{id}/disable:
+    post:
+      tags:
+        - webhooks
+      summary: Disable webhook
+      description: Disable a webhook
+      operationId: disableWebhook
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Webhook disabled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/webhooks/{id}/enable:
+    post:
+      tags:
+        - webhooks
+      summary: Enable webhook
+      description: Enable a webhook
+      operationId: enableWebhook
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+      responses:
+        '200':
+          description: Webhook enabled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api:
+    get:
+      tags:
+        - metadata
+      summary: Get API metadata
+      description: Get API metadata and available endpoints
+      operationId: getApiMetadata
+      responses:
+        '200':
+          description: API metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiMetadata'
+
+  /api/health:
+    get:
+      tags:
+        - metadata
+      summary: API health check
+      description: Overall API health check
+      operationId: apiHealthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiHealthCheck'
+        '503':
+          description: API is degraded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiHealthCheck'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key authentication
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token authentication
+
+  parameters:
+    FilterId:
+      name: id
+      in: path
+      required: true
+      description: Filter ID
+      schema:
+        type: string
+    ExportId:
+      name: id
+      in: path
+      required: true
+      description: Export job ID
+      schema:
+        type: string
+    WebhookId:
+      name: id
+      in: path
+      required: true
+      description: Webhook ID
+      schema:
+        type: string
+
+  schemas:
+    # Common schemas
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        service:
+          type: string
+
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: object
+
+    # Analytics schemas
+    AnalyticsQueryRequest:
+      type: object
+      properties:
+        filters:
+          type: object
+          description: Filter criteria
+        aggregations:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              function:
+                type: string
+                enum: [sum, avg, count, min, max, percentile, stddev]
+        timeRange:
+          type: object
+          properties:
+            startTime:
+              type: string
+              format: date-time
+            endTime:
+              type: string
+              format: date-time
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            pageSize:
+              type: integer
+
+    AnalyticsQueryResponse:
+      type: object
+      properties:
+        queryId:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+        metadata:
+          type: object
+          properties:
+            executionTimeMs:
+              type: number
+            recordCount:
+              type: integer
+            cached:
+              type: boolean
+
+    AnalyticsStats:
+      type: object
+      properties:
+        totalQueries:
+          type: integer
+        avgExecutionTimeMs:
+          type: number
+        cacheHitRate:
+          type: number
+        slowQueries:
+          type: array
+          items:
+            type: object
+
+    # Cost schemas
+    CostBreakdownRequest:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        dimensions:
+          type: array
+          items:
+            type: string
+
+    CostBreakdownResponse:
+      type: object
+      properties:
+        breakdown:
+          type: array
+          items:
+            type: object
+        summary:
+          type: object
+          properties:
+            totalCost:
+              type: number
+            totalTokens:
+              type: integer
+
+    CostTrendsRequest:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        granularity:
+          type: string
+          enum: [hour, day, week, month]
+        includeForecast:
+          type: boolean
+        forecastPeriod:
+          type: integer
+
+    CostTrendsResponse:
+      type: object
+      properties:
+        trends:
+          type: array
+          items:
+            type: object
+        forecast:
+          type: array
+          items:
+            type: object
+
+    CostForecastRequest:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        forecastPeriod:
+          type: integer
+        confidence:
+          type: number
+
+    CostForecastResponse:
+      type: object
+      properties:
+        forecast:
+          type: array
+          items:
+            type: object
+        confidence:
+          type: number
+
+    CostOptimizationRequest:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        scope:
+          type: object
+        options:
+          type: object
+
+    CostOptimizationResponse:
+      type: object
+      properties:
+        recommendations:
+          type: array
+          items:
+            type: object
+        potentialSavings:
+          type: number
+
+    CostComparisonRequest:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        dimensions:
+          type: array
+          items:
+            type: string
+
+    CostComparisonResponse:
+      type: object
+      properties:
+        comparison:
+          type: array
+          items:
+            type: object
+
+    # Filter schemas
+    FilterDimensions:
+      type: object
+      properties:
+        dimensions:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              description:
+                type: string
+              values:
+                type: array
+                items:
+                  type: string
+
+    FilterValidationRequest:
+      type: object
+      properties:
+        filters:
+          type: object
+
+    FilterValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+
+    SavedFiltersList:
+      type: object
+      properties:
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/SavedFilter'
+
+    SaveFilterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        config:
+          type: object
+
+    SavedFilter:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        config:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    DeleteFilterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        id:
+          type: string
+
+    # Aggregation schemas
+    AggregationFunctions:
+      type: object
+      properties:
+        functions:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              applicableTypes:
+                type: array
+                items:
+                  type: string
+
+    AggregationRequest:
+      type: object
+      properties:
+        aggregations:
+          type: array
+          items:
+            type: object
+        filters:
+          type: object
+        timeRange:
+          type: object
+
+    AggregationResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+        metadata:
+          type: object
+          properties:
+            executionTimeMs:
+              type: number
+            recordCount:
+              type: integer
+
+    AggregationTrendsRequest:
+      type: object
+      properties:
+        aggregations:
+          type: array
+          items:
+            type: object
+        granularity:
+          type: string
+        timeRange:
+          type: object
+
+    AggregationTrendsResponse:
+      type: object
+      properties:
+        trends:
+          type: array
+          items:
+            type: object
+        metadata:
+          type: object
+
+    # Export schemas
+    ExportRequest:
+      type: object
+      properties:
+        format:
+          type: string
+          enum: [json, csv, pdf]
+        filters:
+          type: object
+        fields:
+          type: array
+          items:
+            type: string
+
+    ExportFormats:
+      type: object
+      properties:
+        formats:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              mimeType:
+                type: string
+              extension:
+                type: string
+
+    ExportJob:
+      type: object
+      properties:
+        exportId:
+          type: string
+        status:
+          type: string
+          enum: [processing, completed, failed]
+        format:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        estimatedCompletion:
+          type: string
+          format: date-time
+
+    ExportStatus:
+      type: object
+      properties:
+        exportId:
+          type: string
+        status:
+          type: string
+          enum: [processing, completed, failed]
+        progress:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+
+    # Webhook schemas
+    WebhookList:
+      type: object
+      properties:
+        webhooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Webhook'
+
+    CreateWebhookRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        headers:
+          type: object
+        secret:
+          type: string
+
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+        headers:
+          type: object
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        lastTriggered:
+          type: string
+          format: date-time
+
+    UpdateWebhookRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+        headers:
+          type: object
+        enabled:
+          type: boolean
+
+    DeleteWebhookResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        id:
+          type: string
+
+    WebhookTestResult:
+      type: object
+      properties:
+        webhookId:
+          type: string
+        testResult:
+          type: object
+          properties:
+            success:
+              type: boolean
+            statusCode:
+              type: integer
+            responseTimeMs:
+              type: number
+            timestamp:
+              type: string
+              format: date-time
+
+    # Metadata schemas
+    ApiMetadata:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        endpoints:
+          type: array
+          items:
+            type: object
+        documentation:
+          type: string
+
+    ApiHealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded]
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          additionalProperties:
+            type: boolean
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Rate limit
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Reset timestamp
+        Retry-After:
+          schema:
+            type: integer
+          description: Retry after seconds
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
