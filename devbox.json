@@ -3,12 +3,35 @@
     "nodejs",
     "pnpm",
     "nx",
-    "typescript-language-server"
+    "typescript-language-server",
+    "rust",
+    "rust-analyzer",
+    "just",
+    "prettier"
   ],
   "shell": {
     "init_hook": [
-      "echo '🔧 Welcome to AI Dashboard development shell!'",
-      "echo '📁 Project location: $(pwd)'"
+      "just bootstrap-internal"
     ]
-  }
+  },
+  "scripts": {
+    "bootstrap": "just bootstrap-internal",
+    "prime": "just prime-internal",
+    "doctor": "just doctor-internal",
+    "clean": "just clean-internal",
+    "clean-all": "just clean-all-internal",
+    "build": "just build-internal",
+    "lint": "just lint-internal",
+    "test": "just test-internal",
+    "typecheck": "just typecheck-internal",
+    "dev": "just dev-internal",
+    "quality": "just quality",
+    "format": "just format",
+    "format-check": "just format-check",
+    "ci": "just ci",
+    "ci-full": "just ci-full"
+  },
+  "nix_pkgs": [
+    "just"
+  ]
 }
