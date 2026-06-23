@@ -18,6 +18,18 @@ export type { JSONExportOptions, JSONExportResult } from './formats/json';
 export { pdfExporter, PDFExporter } from './formats/pdf';
 export type { PDFExportOptions, PDFExportResult } from './formats/pdf';
 
+export { ToonFormatExporter, ToonFormatDecoder, toonFormatExporter, toonFormatDecoder } from './formats/toonformat';
+export type { ToonFormatExportOptions, ToonFormatExportResult } from './formats/toonformat';
+
+export { JSONSingleExporter, JSONSingleDecoder, jsonSingleExporter, jsonSingleDecoder } from './formats/json-single';
+export type { JSONSingleExportOptions, JSONSingleExportResult } from './formats/json-single';
+
+export { ToonFormatOptimizer, ToonFormatTokenEstimator, toonFormatOptimizer, toonFormatTokenEstimator } from './toonformat-optimizer';
+export type { CompressionOptions, CompressionAnalysis, FieldAnalysis } from './toonformat-optimizer';
+
+export { FormatConverter, formatConverter } from './converters';
+export type { ConversionOptions, ConversionResult } from './converters';
+
 // Filtering and customization
 export { exportFilterProcessor, ExportFilterProcessor } from './filters';
 export type { 
