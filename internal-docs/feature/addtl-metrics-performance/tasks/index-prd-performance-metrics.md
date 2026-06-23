@@ -8,8 +8,8 @@ This index provides a summary of all implementation stories for the Performance 
 
 | Story ID | Story Title | Branch | Dependencies | Status | Parallel-safe | Modules |
 | -------- | ----------- | ------ | ------------ | ------ | ------------- | ------- |
-| 01-001 | Performance Metrics Data Model | feature/current/prd-perf-metrics/story-01-001-data-model | None | [~] In-Progress | Parallel-safe: true | database, schema |
-| 01-002 | Hardware Monitoring Integration | feature/current/prd-perf-metrics/story-01-002-hardware-monitoring | None | [ ] Pending | Parallel-safe: true | proxy, monitoring |
+| 01-001 | Performance Metrics Data Model | feature/current/prd-perf-metrics/story-01-001-data-model | None | [x] Done | Parallel-safe: true | database, schema |
+| 01-002 | Hardware Monitoring Integration | feature/current/prd-perf-metrics/story-01-002-hardware-monitoring | None | [~] In-Progress | Parallel-safe: true | proxy, monitoring |
 
 ## Phase 02: Metric Collection
 

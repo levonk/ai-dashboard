@@ -27,18 +27,18 @@ Integrate hardware monitoring libraries and APIs to collect system-level metrics
 
 ## Sub-Tasks
 
-- [ ] Research and select GPU monitoring libraries (nvidia-smi, NVML) — target: dependency evaluation
-- [ ] Research and select CPU monitoring libraries (psutil, sysinfo) — target: dependency evaluation
-- [ ] Add GPU monitoring dependencies to proxy service — target: apps/proxy/Cargo.toml
-- [ ] Add CPU monitoring dependencies to proxy service — target: apps/proxy/Cargo.toml
-- [ ] Implement GPU metrics collection module — target: apps/proxy/src/monitoring/gpu.rs
-- [ ] Implement CPU metrics collection module — target: apps/proxy/src/monitoring/cpu.rs
-- [ ] Implement memory monitoring module — target: apps/proxy/src/monitoring/memory.rs
-- [ ] Implement temperature monitoring module — target: apps/proxy/src/monitoring/temperature.rs
-- [ ] Implement power monitoring module — target: apps/proxy/src/monitoring/power.rs
-- [ ] Create hardware monitoring service interface — target: apps/proxy/src/monitoring/mod.rs
-- [ ] Add error handling for missing hardware or unsupported platforms — target: monitoring modules
-- [ ] Write unit tests for hardware monitoring modules — target: apps/proxy/src/monitoring/
+- [x] Research and select GPU monitoring libraries (nvidia-smi, NVML) — target: dependency evaluation
+- [x] Research and select CPU monitoring libraries (psutil, sysinfo) — target: dependency evaluation
+- [x] Add GPU monitoring dependencies to proxy service — target: apps/proxy/Cargo.toml
+- [x] Add CPU monitoring dependencies to proxy service — target: apps/proxy/Cargo.toml
+- [x] Implement GPU metrics collection module — target: apps/proxy/src/monitoring/gpu.rs
+- [x] Implement CPU metrics collection module — target: apps/proxy/src/monitoring/cpu.rs
+- [x] Implement memory monitoring module — target: apps/proxy/src/monitoring/memory.rs
+- [x] Implement temperature monitoring module — target: apps/proxy/src/monitoring/temperature.rs
+- [x] Implement power monitoring module — target: apps/proxy/src/monitoring/power.rs
+- [x] Create hardware monitoring service interface — target: apps/proxy/src/monitoring/mod.rs
+- [x] Add error handling for missing hardware or unsupported platforms — target: monitoring modules
+- [x] Write unit tests for hardware monitoring modules — target: apps/proxy/src/monitoring/
 
 ## Relevant Files
 
@@ -52,15 +52,15 @@ Integrate hardware monitoring libraries and APIs to collect system-level metrics
 
 ## Acceptance Criteria
 
-- [ ] GPU monitoring library successfully collects utilization, memory, temperature, and power metrics
-- [ ] CPU monitoring library successfully collects utilization, memory, and temperature metrics
-- [ ] Memory monitoring collects GPU, CPU, and unified memory usage
-- [ ] Temperature monitoring collects GPU and CPU temperatures in Celsius
-- [ ] Power monitoring collects power consumption in Watts
-- [ ] Error handling gracefully handles missing hardware or unsupported platforms
-- [ ] All monitoring modules have comprehensive unit tests
-- [ ] Monitoring overhead is minimal (<1% CPU utilization)
-- [ ] Documentation covers supported platforms and hardware requirements
+- [x] GPU monitoring library successfully collects utilization, memory, temperature, and power metrics
+- [x] CPU monitoring library successfully collects utilization, memory, and temperature metrics
+- [x] Memory monitoring collects GPU, CPU, and unified memory usage
+- [x] Temperature monitoring collects GPU and CPU temperatures in Celsius
+- [x] Power monitoring collects power consumption in Watts
+- [x] Error handling gracefully handles missing hardware or unsupported platforms
+- [x] All monitoring modules have comprehensive unit tests
+- [x] Monitoring overhead is minimal (<1% CPU utilization)
+- [x] Documentation covers supported platforms and hardware requirements
 
 ## Test Plan
 
