@@ -152,7 +152,7 @@ impl Default for PasswordPolicy {
 }
 
 /// Password strength assessment
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum PasswordStrength {
     Weak,
     Fair,

@@ -18,6 +18,7 @@ hex = "0.4"
 aes-gcm = "0.10"
 base64 = "0.22"
 zeroize = "1.7"
+toon-format = "0.5"
 
 [dev-dependencies]
 criterion = "0.5"

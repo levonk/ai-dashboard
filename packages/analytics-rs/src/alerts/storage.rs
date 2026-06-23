@@ -311,7 +311,7 @@ impl Default for AlertStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::alerts::{AlertCondition, ComparisonOperator, TimeWindow, AggregationType, AlertSeverity, NotificationChannel, ChannelType, ChannelConfig};
+    use crate::alerts::{AlertCondition, ComparisonOperator, TimeWindow, AggregationType, AlertSeverity};
 
     #[test]
     fn test_add_and_get_rule() {

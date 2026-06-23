@@ -4,6 +4,7 @@ pub mod auth;
 pub mod audit;
 pub mod cost;
 pub mod crypto;
+pub mod export;
 pub mod filtering;
 pub mod hashing;
 pub mod image_tokens;
@@ -30,6 +31,7 @@ pub use alerts::{
 pub use alerts::storage::{AlertStorage, StorageError};
 pub use notifications::{NotificationManager, NotificationError, NotificationSender};
 pub use cost::{CostCalculator, PricingModel, PricingDatabase, ProviderConfig, CostBreakdown, BudgetAlert, CostOptimizationSuggestion};
+pub use export::{ToonFormatEncoder, ToonFormatDecoder, calculate_compression_ratio};
 pub use filtering::FilterEngine;
 pub use hashing::{content_hash, structured_hash, correlation_id, HashCollisionMonitor};
 pub use image_tokens::{ImageTokenEstimator, ImageMetadata, ImageFormat, ImageDetail};
