@@ -27,46 +27,51 @@ Implement collection of system resource metrics using the hardware monitoring in
 
 ## Sub-Tasks
 
-- [ ] Implement GPU utilization collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement CPU utilization collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement GPU memory usage collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement CPU memory usage collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement unified memory usage collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement GPU temperature collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement CPU temperature collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement power consumption collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement software clock speed collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement hardware clock speed collection — target: apps/proxy/src/metrics/system.rs
-- [ ] Implement sample rate tracking — target: apps/proxy/src/metrics/system.rs
-- [ ] Integrate system metrics collection into proxy service — target: apps/proxy/src/proxy/service.rs
-- [ ] Implement periodic collection scheduler — target: apps/proxy/src/metrics/scheduler.rs
-- [ ] Add metrics storage integration for system metrics — target: apps/proxy/src/metrics/storage.rs
-- [ ] Write unit tests for system metrics collection — target: apps/proxy/src/metrics/
+- [x] Implement GPU utilization collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement CPU utilization collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement GPU memory usage collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement CPU memory usage collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement unified memory usage collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement GPU temperature collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement CPU temperature collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement power consumption collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement software clock speed collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement hardware clock speed collection — target: apps/proxy/src/metrics/system.rs
+- [x] Implement sample rate tracking — target: apps/proxy/src/metrics/system.rs
+- [x] Integrate system metrics collection into proxy service — target: apps/proxy/src/proxy/service.rs
+- [x] Implement periodic collection scheduler — target: apps/proxy/src/metrics/scheduler.rs
+- [x] Add metrics storage integration for system metrics — target: apps/proxy/src/metrics/storage.rs
+- [x] Write unit tests for system metrics collection — target: apps/proxy/src/metrics/
 
 ## Relevant Files
 
-- `apps/proxy/src/metrics/system.rs` — System resource metrics implementation
-- `apps/proxy/src/proxy/service.rs` — Proxy service integration
-- `apps/proxy/src/metrics/scheduler.rs` — Periodic collection scheduler
-- `apps/proxy/src/metrics/storage.rs` — Metrics storage integration
+- `apps/proxy/src/collection/system.rs` — System resource metrics implementation
+- `apps/proxy/src/server.rs` — Proxy service integration
+- `apps/proxy/src/collection/scheduler.rs` — Periodic collection scheduler
+- `apps/proxy/src/collection/system_storage.rs` — Metrics storage integration
+- `apps/proxy/src/collection/mod.rs` — Module exports updated
+- `apps/proxy/src/lib.rs` — Added monitoring module export
+- `apps/proxy/src/monitoring/cpu.rs` — Updated for sysinfo compatibility
+- `apps/proxy/src/monitoring/memory.rs` — Updated for sysinfo compatibility
+- `apps/proxy/src/monitoring/gpu.rs` — Updated for nvml-wrapper compatibility
 
 ## Acceptance Criteria
 
-- [ ] GPU utilization is collected and recorded as percentage
-- [ ] CPU utilization is collected and recorded as percentage
-- [ ] GPU memory usage is collected in appropriate units (MB/GB)
-- [ ] CPU memory usage is collected in appropriate units (MB/GB)
-- [ ] Unified memory usage is collected when available
-- [ ] GPU temperature is collected in Celsius
-- [ ] CPU temperature is collected in Celsius
-- [ ] Power consumption is collected in Watts
-- [ ] Software and hardware clock speeds are collected in MHz
-- [ ] Sample rate is tracked in Hz
-- [ ] System metrics are collected at appropriate intervals (e.g., 1 second)
-- [ ] System metrics collection adds <1% CPU overhead
-- [ ] All system metrics are linked to timestamps for time-series analysis
-- [ ] Unit tests cover all system metrics collection
-- [ ] Integration tests verify end-to-end collection
+- [x] GPU utilization is collected and recorded as percentage
+- [x] CPU utilization is collected and recorded as percentage
+- [x] GPU memory usage is collected in appropriate units (MB/GB)
+- [x] CPU memory usage is collected in appropriate units (MB/GB)
+- [x] Unified memory usage is collected when available
+- [x] GPU temperature is collected in Celsius
+- [x] CPU temperature is collected in Celsius
+- [x] Power consumption is collected in Watts
+- [x] Software and hardware clock speeds are collected in MHz
+- [x] Sample rate is tracked in Hz
+- [x] System metrics are collected at appropriate intervals (e.g., 1 second)
+- [x] System metrics collection adds <1% CPU overhead
+- [x] All system metrics are linked to timestamps for time-series analysis
+- [x] Unit tests cover all system metrics collection
+- [x] Integration tests verify end-to-end collection
 
 ## Test Plan
 

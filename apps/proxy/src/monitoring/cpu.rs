@@ -5,9 +5,9 @@
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use sysinfo::{System, SystemExt, CpuExt};
+use sysinfo::System;
 use std::sync::{Arc, Mutex};
-use tracing::{debug, error, info, warn};
+use tracing::{error, info};
 
 /// CPU metrics collected from the system
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -96,27 +96,30 @@ impl CpuMonitor {
             .context("Failed to acquire system lock")?;
         
         // Refresh CPU information
-        system.refresh_cpu();
+        system.refresh_cpu_all();
         
-        // Get overall CPU usage
-        let total_utilization_percent = system.global_cpu_usage();
+        // Get overall CPU usage by averaging individual cores
+        let cpus = system.cpus();
+        let total_utilization_percent: f32 = cpus.iter()
+            .map(|cpu| cpu.cpu_usage())
+            .sum::<f32>() / cpus.len() as f32;
         
         // Get CPU vendor and brand
-        let vendor_id = system.cpus()
+        let vendor_id = cpus
             .first()
-            .and_then(|cpu| cpu.vendor_id())
+            .map(|cpu| cpu.vendor_id())
             .unwrap_or("Unknown")
             .to_string();
         
-        let brand = system.cpus()
+        let brand = cpus
             .first()
-            .and_then(|cpu| cpu.brand())
+            .map(|cpu| cpu.brand())
             .unwrap_or("Unknown")
             .to_string();
         
         // Collect individual core metrics
         let mut cores = Vec::new();
-        for (index, cpu) in system.cpus().iter().enumerate() {
+        for (index, cpu) in cpus.iter().enumerate() {
             let utilization_percent = cpu.cpu_usage();
             let frequency_mhz = cpu.frequency();
             let core_name = format!("Core-{}", index);
@@ -129,14 +132,14 @@ impl CpuMonitor {
                 core_name,
                 utilization_percent,
                 frequency_mhz: Some(frequency_mhz),
-                vendor_id: Some(cpu.vendor_id().unwrap_or("Unknown").to_string()),
-                brand: Some(cpu.brand().unwrap_or("Unknown").to_string()),
+                vendor_id: Some(cpu.vendor_id().to_string()),
+                brand: Some(cpu.brand().to_string()),
                 is_under_load,
             });
         }
         
         // Get load average (Unix-like systems only)
-        let load_average = System::load_average();
+        let load_average = system.load_average();
         let load_average = if load_average.one == 0.0 && load_average.five == 0.0 && load_average.fifteen == 0.0 {
             None
         } else {
@@ -160,7 +163,7 @@ impl CpuMonitor {
             .context("Failed to acquire system lock")?;
         
         // Refresh CPU information
-        system.refresh_cpu();
+        system.refresh_cpu_all();
         
         let cpus = system.cpus();
         
@@ -182,8 +185,8 @@ impl CpuMonitor {
             core_name,
             utilization_percent,
             frequency_mhz: Some(frequency_mhz),
-            vendor_id: Some(cpu.vendor_id().unwrap_or("Unknown").to_string()),
-            brand: Some(cpu.brand().unwrap_or("Unknown").to_string()),
+            vendor_id: Some(cpu.vendor_id().to_string()),
+            brand: Some(cpu.brand().to_string()),
             is_under_load,
         })
     }

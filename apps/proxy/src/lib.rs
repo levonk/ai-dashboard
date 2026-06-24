@@ -30,6 +30,7 @@ pub mod analytics_mode;
 pub mod emitter;
 pub mod sdk;
 pub mod collection;
+pub mod monitoring;
 pub mod middleware;
 pub mod tls;
 

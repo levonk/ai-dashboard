@@ -4,7 +4,7 @@
 //! through the nvml-wrapper crate. It collects utilization, memory, temperature, and power metrics.
 
 use anyhow::{Context, Result};
-use nvml_wrapper::{Nvml, Device};
+use nvml_wrapper::Nvml;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use tracing::{debug, error, info, warn};
@@ -141,7 +141,7 @@ impl GpuMonitor {
             });
 
         // Collect temperature
-        let temperature_celsius = device.temperature(nvml_wrapper::TemperatureSensor::Gpu)
+        let temperature_celsius = device.temperature()
             .ok()
             .map(|t| t as u32);
 
@@ -156,9 +156,9 @@ impl GpuMonitor {
             .map(|f| f as u32);
 
         // Collect clock speed
-        let clock_speed_mhz = device.clock_info(nvml_wrapper::Clock::Graphics)
+        let clock_speed_mhz = device.clock_info()
             .ok()
-            .map(|c| c as u32);
+            .map(|c| c.graphics_clock as u32);
 
         // Determine if GPU is under load (utilization > 10%)
         let is_under_load = utilization_percent.map_or(false, |u| u > 10.0);

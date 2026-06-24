@@ -5,9 +5,9 @@
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use sysinfo::{System, SystemExt};
+use sysinfo::System;
 use std::sync::{Arc, Mutex};
-use tracing::{debug, info};
+use tracing::info;
 
 /// Memory metrics for GPU memory
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,7 +53,7 @@ pub struct SystemMemoryMetrics {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryMetrics {
     /// System memory metrics
-    pub system: SystemMemoryMetrics,
+    pub system_memory: SystemMemoryMetrics,
     /// GPU memory metrics (if available)
     pub gpu_memory: Vec<GpuMemoryMetrics>,
 }
@@ -159,11 +159,11 @@ impl MemoryMonitor {
 
     /// Collect all memory metrics
     pub fn collect_metrics(&self, gpu_metrics: Vec<super::gpu::GpuMetrics>) -> Result<MemoryMetrics> {
-        let system = self.collect_system_metrics()?;
+        let system_memory = self.collect_system_metrics()?;
         let gpu_memory = self.collect_gpu_metrics(gpu_metrics);
         
         Ok(MemoryMetrics {
-            system,
+            system_memory,
             gpu_memory,
         })
     }
