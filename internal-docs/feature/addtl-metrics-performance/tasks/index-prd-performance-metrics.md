@@ -17,13 +17,13 @@ This index provides a summary of all implementation stories for the Performance 
 | -------- | ----------- | ------ | ------------ | ------ | ------------- | ------- |
 | 02-001 | AI Performance Metrics Collection | feature/current/prd-perf-metrics/story-02-001-ai-metrics | 01-001 | [x] Done | Parallel-safe: true | proxy, collection |
 | 02-002 | System Resource Metrics Collection | feature/current/prd-perf-metrics/story-02-002-system-metrics | 01-001, 01-002 | [x] Done | Parallel-safe: true | proxy, collection |
-| 02-003 | Token Processing Metrics | feature/current/prd-perf-metrics/story-02-003-token-metrics | 01-001 | [~] In-Progress | Parallel-safe: true | proxy, processing |
+| 02-003 | Token Processing Metrics | feature/current/prd-perf-metrics/story-02-003-token-metrics | 01-001 | [x] Done | Parallel-safe: true | proxy, processing |
 
 ## Phase 03: Storage and API
 
 | Story ID | Story Title | Branch | Dependencies | Status | Parallel-safe | Modules |
 | -------- | ----------- | ------ | ------------ | ------ | ------------- | ------- |
-| 03-001 | Time-Series Storage Implementation | feature/current/prd-perf-metrics/story-03-001-timeseries-storage | 01-001, 02-001, 02-002, 02-003 | [ ] Pending | Parallel-safe: true | database, storage |
+| 03-001 | Time-Series Storage Implementation | feature/current/prd-perf-metrics/story-03-001-timeseries-storage | 01-001, 02-001, 02-002, 02-003 | [~] In-Progress | Parallel-safe: true | database, storage |
 | 03-002 | Performance Metrics API Endpoints | feature/current/prd-perf-metrics/story-03-002-api-endpoints | 03-001 | [ ] Pending | Parallel-safe: true | api, backend |
 | 03-003 | Metrics Aggregation Functions | feature/current/prd-perf-metrics/story-03-003-aggregation | 03-001 | [ ] Pending | Parallel-safe: true | analytics, processing |
 

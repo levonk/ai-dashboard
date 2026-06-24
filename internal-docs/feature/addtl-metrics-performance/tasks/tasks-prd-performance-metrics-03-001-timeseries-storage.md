@@ -27,17 +27,17 @@ Implement efficient time-series storage for high-frequency performance metrics. 
 
 ## Sub-Tasks
 
-- [ ] Implement time-series data write optimization — target: apps/proxy/src/db/timeseries.rs
-- [ ] Implement batch write operations for metrics — target: apps/proxy/src/db/timeseries.rs
-- [ ] Add data compression for time-series data — target: apps/proxy/src/db/compression.rs
-- [ ] Implement time-series query optimization — target: apps/proxy/src/db/timeseries.rs
-- [ ] Add time-based partitioning for metrics tables — target: database migrations
-- [ ] Implement data retention policy enforcement — target: apps/proxy/src/db/retention.rs
-- [ ] Add time-series data cleanup jobs — target: apps/proxy/src/db/cleanup.rs
-- [ ] Implement query caching for common time-series queries — target: apps/proxy/src/db/cache.rs
-- [ ] Add monitoring for time-series storage performance — target: apps/proxy/src/db/monitoring.rs
-- [ ] Write unit tests for time-series operations — target: apps/proxy/src/db/
-- [ ] Write performance tests for time-series operations — target: apps/proxy/src/db/
+- [x] Implement time-series data write optimization — target: apps/proxy/src/db/timeseries.rs
+- [x] Implement batch write operations for metrics — target: apps/proxy/src/db/timeseries.rs
+- [x] Add data compression for time-series data — target: apps/proxy/src/db/compression.rs
+- [x] Implement time-series query optimization — target: apps/proxy/src/db/timeseries.rs
+- [x] Add time-based partitioning for metrics tables — target: database migrations
+- [x] Implement data retention policy enforcement — target: apps/proxy/src/db/retention.rs
+- [x] Add time-series data cleanup jobs — target: apps/proxy/src/db/cleanup.rs
+- [x] Implement query caching for common time-series queries — target: apps/proxy/src/db/cache.rs
+- [x] Add monitoring for time-series storage performance — target: apps/proxy/src/db/monitoring.rs
+- [x] Write unit tests for time-series operations — target: apps/proxy/src/db/
+- [x] Write performance tests for time-series operations — target: apps/proxy/src/db/
 
 ## Relevant Files
 
@@ -50,17 +50,17 @@ Implement efficient time-series storage for high-frequency performance metrics. 
 
 ## Acceptance Criteria
 
-- [ ] Time-series writes handle high-frequency metrics without performance degradation
-- [ ] Batch write operations reduce database load significantly
-- [ ] Data compression reduces storage requirements by >50%
-- [ ] Time-series queries return within 2 seconds for standard time ranges
-- [ ] Time-based partitioning improves query performance for large datasets
-- [ ] Data retention policies automatically enforce retention periods
-- [ ] Cleanup jobs remove expired data without impacting performance
-- [ ] Query caching improves response time for repeated queries
-- [ ] Storage performance monitoring identifies bottlenecks
-- [ ] Unit tests cover all time-series operations
-- [ ] Performance tests validate scalability targets
+- [x] Time-series writes handle high-frequency metrics without performance degradation
+- [x] Batch write operations reduce database load significantly
+- [x] Data compression reduces storage requirements by >50%
+- [x] Time-series queries return within 2 seconds for standard time ranges
+- [x] Time-based partitioning improves query performance for large datasets
+- [x] Data retention policies automatically enforce retention periods
+- [x] Cleanup jobs remove expired data without impacting performance
+- [x] Query caching improves response time for repeated queries
+- [x] Storage performance monitoring identifies bottlenecks
+- [x] Unit tests cover all time-series operations
+- [x] Performance tests validate scalability targets
 
 ## Test Plan
 
