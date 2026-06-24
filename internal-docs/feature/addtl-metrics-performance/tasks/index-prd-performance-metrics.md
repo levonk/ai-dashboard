@@ -16,7 +16,7 @@ This index provides a summary of all implementation stories for the Performance 
 | Story ID | Story Title | Branch | Dependencies | Status | Parallel-safe | Modules |
 | -------- | ----------- | ------ | ------------ | ------ | ------------- | ------- |
 | 02-001 | AI Performance Metrics Collection | feature/current/prd-perf-metrics/story-02-001-ai-metrics | 01-001 | [x] Done | Parallel-safe: true | proxy, collection |
-| 02-002 | System Resource Metrics Collection | feature/current/prd-perf-metrics/story-02-002-system-metrics | 01-001, 01-002 | [~] In-Progress | Parallel-safe: true | proxy, collection |
+| 02-002 | System Resource Metrics Collection | feature/current/prd-perf-metrics/story-02-002-system-metrics | 01-001, 01-002 | [x] Done | Parallel-safe: true | proxy, collection |
 | 02-003 | Token Processing Metrics | feature/current/prd-perf-metrics/story-02-003-token-metrics | 01-001 | [ ] Pending | Parallel-safe: true | proxy, processing |
 
 ## Phase 03: Storage and API
