@@ -27,37 +27,38 @@ Implement detailed token processing metrics to provide insights into token gener
 
 ## Sub-Tasks
 
-- [ ] Implement token throughput tracking (tokens/second overall) — target: apps/proxy/src/metrics/tokens.rs
-- [ ] Implement token generation rate analysis — target: apps/proxy/src/metrics/tokens.rs
-- [ ] Implement token cost estimation per request — target: apps/proxy/src/metrics/tokens.rs
-- [ ] Implement token caching efficiency metrics — target: apps/proxy/src/metrics/tokens.rs
-- [ ] Implement token streaming metrics (if applicable) — target: apps/proxy/src/metrics/tokens.rs
-- [ ] Add token-level correlation with AI provider responses — target: apps/proxy/src/metrics/tokens.rs
-- [ ] Implement token metrics aggregation functions — target: apps/proxy/src/metrics/aggregation.rs
-- [ ] Integrate token metrics into request pipeline — target: apps/proxy/src/proxy/handler.rs
-- [ ] Add token metrics storage integration — target: apps/proxy/src/metrics/storage.rs
-- [ ] Write unit tests for token metrics — target: apps/proxy/src/metrics/
+- [x] Implement token throughput tracking (tokens/second overall) — target: apps/proxy/src/metrics/tokens.rs
+- [x] Implement token generation rate analysis — target: apps/proxy/src/metrics/tokens.rs
+- [x] Implement token cost estimation per request — target: apps/proxy/src/metrics/tokens.rs
+- [x] Implement token caching efficiency metrics — target: apps/proxy/src/metrics/tokens.rs
+- [x] Implement token streaming metrics (if applicable) — target: apps/proxy/src/metrics/tokens.rs
+- [x] Add token-level correlation with AI provider responses — target: apps/proxy/src/metrics/tokens.rs
+- [x] Implement token metrics aggregation functions — target: apps/proxy/src/metrics/aggregation.rs
+- [x] Integrate token metrics into request pipeline — target: apps/proxy/src/analytics.rs
+- [x] Add token metrics storage integration — target: apps/proxy/src/collection/token_storage.rs
+- [x] Write unit tests for token metrics — target: apps/proxy/src/collection/
 
 ## Relevant Files
 
-- `apps/proxy/src/metrics/tokens.rs` — Token processing metrics implementation
-- `apps/proxy/src/metrics/aggregation.rs` — Token metrics aggregation
-- `apps/proxy/src/proxy/handler.rs` — Request handler integration
-- `apps/proxy/src/metrics/storage.rs` — Metrics storage integration
+- `apps/proxy/src/collection/tokens.rs` — Token processing metrics implementation (extended with throughput, generation rate, caching, streaming, and provider correlation)
+- `apps/proxy/src/collection/aggregation.rs` — Token metrics aggregation functions (new file)
+- `apps/proxy/src/analytics.rs` — Request pipeline integration (extended with token metrics processing)
+- `apps/proxy/src/collection/token_storage.rs` — Metrics storage integration (new file)
+- `apps/proxy/src/collection/mod.rs` — Module exports updated
 
 ## Acceptance Criteria
 
-- [ ] Token throughput is accurately calculated and recorded
-- [ ] Token generation rate analysis provides meaningful insights
-- [ ] Token cost estimation is accurate per request
-- [ ] Token caching efficiency is tracked when caching is enabled
-- [ ] Token streaming metrics capture real-time generation patterns
-- [ ] Token metrics are correlated with AI provider responses
-- [ ] Token metrics aggregation functions provide useful summaries
-- [ ] Token metrics collection adds minimal overhead (<2ms)
-- [ ] All token metrics are linked to request IDs
-- [ ] Unit tests cover all token metric calculations
-- [ ] Integration tests verify end-to-end token metrics collection
+- [x] Token throughput is accurately calculated and recorded
+- [x] Token generation rate analysis provides meaningful insights
+- [x] Token cost estimation is accurate per request
+- [x] Token caching efficiency is tracked when caching is enabled
+- [x] Token streaming metrics capture real-time generation patterns
+- [x] Token metrics are correlated with AI provider responses
+- [x] Token metrics aggregation functions provide useful summaries
+- [x] Token metrics collection adds minimal overhead (<2ms)
+- [x] All token metrics are linked to request IDs
+- [x] Unit tests cover all token metric calculations
+- [x] Integration tests verify end-to-end token metrics collection
 
 ## Test Plan
 

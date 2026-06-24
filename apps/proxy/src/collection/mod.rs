@@ -11,6 +11,8 @@ pub mod ai_storage;
 pub mod system;
 pub mod scheduler;
 pub mod system_storage;
+pub mod aggregation;
+pub mod token_storage;
 
 pub use metadata::MetadataExtractor;
 pub use timing::{TimingCollector, RequestTiming};
@@ -25,3 +27,13 @@ pub use ai_storage::{AIMetricsStorage, AIMetricsQueryBuilder};
 pub use system::{SystemMetricsCollector, SystemMetrics};
 pub use scheduler::{MetricsScheduler, SchedulerStatistics};
 pub use system_storage::{SystemMetricsStorage, SystemMetricsQueryBuilder, TimeRange, SystemMetricsStatistics, BatchStoreResult};
+pub use aggregation::{
+    TokenMetricsAggregator, ThroughputAggregation, GenerationRateAggregation,
+    CachingAggregation, StreamingAggregation, ProviderAggregation, ModelAggregation,
+    TimeSeriesTokenMetrics
+};
+pub use tokens::{
+    TokenThroughput, TokenGenerationRate, TokenCachingMetrics,
+    TokenStreamingMetrics, TokenProviderCorrelation, StreamingTokenData, StreamingChunk
+};
+pub use token_storage::{TokenMetricsStorage, TokenStorageStatistics};
