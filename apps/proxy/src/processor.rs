@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::{info, warn};
-use crate::export::{DataRecord, DataImporter};
+use crate::export::{DataRecord, DataImporter, ExportFormat};
 
 /// Processing operation type
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

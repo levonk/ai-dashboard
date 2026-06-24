@@ -453,7 +453,7 @@ mod tests {
     #[test]
     fn test_extract_time_of_day() {
         let time = DimensionExtractor::extract_time_of_day();
-        assert!["night", "morning", "afternoon", "evening"].contains(&time.as_str());
+        assert!(["night", "morning", "afternoon", "evening"].contains(&time.as_str()));
     }
 
     #[test]

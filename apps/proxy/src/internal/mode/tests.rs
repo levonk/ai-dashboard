@@ -1,3 +1,6 @@
+use crate::internal::mode::{detect_mode, Mode, ModeSource};
+use std::env;
+
 #[test]
 fn test_mode_detection_cli_flag_human() {
     // Test that --human flag forces human mode

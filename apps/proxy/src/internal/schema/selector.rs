@@ -198,7 +198,7 @@ mod tests {
 
         assert_eq!(value.get("id"), Some(&json!("123")));
         assert_eq!(value.get("name"), Some(&json!("test")));
-        assert!(value.get("status"), Some(&json!("active")));
+        assert_eq!(value.get("status"), Some(&json!("active")));
         assert!(value.get("description").is_none());
     }
 
