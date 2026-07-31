@@ -1,17 +1,20 @@
 {
-  "packages": [
-    "github:levonk/levonk-packages#bundle-rtk-core",
-    "github:levonk/levonk-packages#bundle-rtk-cloud",
-    "github:levonk/levonk-packages#bundle-devbox-auto-rust",
-    "github:levonk/levonk-packages#devbox-rtk-nodejs-pnpm-force",
-    "typescript-language-server",
-    "rust-analyzer",
-    "just",
-    "prettier",
-    "ripgrep",
-    "fd",
-    "difftastic@latest"
-  ],
+  "packages": {
+    "github:levonk/levonk-packages#bundle-rtk-core":              "",
+    "github:levonk/levonk-packages#bundle-rtk-cloud":             "",
+    "github:levonk/levonk-packages#bundle-devbox-auto-rust":      "",
+    "github:levonk/levonk-packages#devbox-rtk-nodejs-pnpm-force": "",
+    "typescript-language-server":                                 "",
+    "rust-analyzer":                                              "",
+    "just":                                                       "",
+    "prettier":                                                   "",
+    "ripgrep":                                                    "",
+    "fd":                                                         "",
+    "difftastic":                                                 ""
+  },
+  "nixpkgs": {
+    "commit": "8623c4c20aa4ca2f5fb81510d2944066c3fb0d96"
+  },
   "shell": {
     "init_hook": [
       "just bootstrap-internal"
