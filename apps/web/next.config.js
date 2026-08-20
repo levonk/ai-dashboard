@@ -12,6 +12,8 @@ const nextConfig = withJobAideNextConfig({
   },
   // Custom build output directory
   distDir: 'dist',
+  // Emit a self-contained server build for the Docker image (see apps/web/Dockerfile)
+  output: 'standalone',
 });
 
 export default nextConfig;
