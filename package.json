@@ -52,5 +52,18 @@
     "*.{json,md,css}": [
       "prettier --write"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "@nrwl/tao": "19.8.4",
+      "@nrwl/js": "19.8.4",
+      "@nrwl/next": "19.8.4",
+      "@nrwl/vite": "19.8.4",
+      "@nrwl/devkit": "19.8.4",
+      "@nrwl/web": "19.8.4",
+      "@nrwl/react": "19.8.4",
+      "@nrwl/webpack": "19.8.4",
+      "@nrwl/workspace": "19.8.4"
+    }
   }
 }

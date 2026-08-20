@@ -1,0 +1,11 @@
+.git
+node_modules
+**/node_modules
+**/dist
+**/.next
+**/build
+**/target
+.env
+.env.*
+*.log
+.pnpm-store

@@ -1,16 +1,18 @@
 {
   "packages": {
-    "github:levonk/levonk-packages#bundle-rtk-core":              "",
-    "github:levonk/levonk-packages#bundle-rtk-cloud":             "",
-    "github:levonk/levonk-packages#bundle-devbox-auto-rust":      "",
+    "github:levonk/levonk-packages#bundle-rtk-core": "",
+    "github:levonk/levonk-packages#bundle-rtk-cloud": "",
+    "github:levonk/levonk-packages#bundle-devbox-auto-rust": "",
     "github:levonk/levonk-packages#devbox-rtk-nodejs-pnpm-force": "",
-    "typescript-language-server":                                 "",
-    "rust-analyzer":                                              "",
-    "just":                                                       "",
-    "prettier":                                                   "",
-    "ripgrep":                                                    "",
-    "fd":                                                         "",
-    "difftastic":                                                 ""
+    "typescript-language-server": "",
+    "rust-analyzer": "",
+    "just": "",
+    "prettier": "",
+    "ripgrep": "",
+    "fd": "",
+    "difftastic": "",
+    "git-secrets": "",
+    "git-imerge": ""
   },
   "nixpkgs": {
     "commit": "8623c4c20aa4ca2f5fb81510d2944066c3fb0d96"
@@ -21,20 +23,20 @@
     ]
   },
   "scripts": {
-    "bootstrap":    "just bootstrap-internal",
-    "prime":        "just prime-internal",
-    "doctor":       "just doctor-internal",
-    "clean":        "just clean-internal",
-    "clean-all":    "just clean-all-internal",
-    "build":        "just build-internal",
-    "lint":         "just lint-internal",
-    "test":         "just test-internal",
-    "typecheck":    "just typecheck-internal",
-    "dev":          "just dev-internal",
-    "quality":      "just quality",
-    "format":       "just format",
+    "bootstrap": "just bootstrap-internal",
+    "prime": "just prime-internal",
+    "doctor": "just doctor-internal",
+    "clean": "just clean-internal",
+    "clean-all": "just clean-all-internal",
+    "build": "just build-internal",
+    "lint": "just lint-internal",
+    "test": "just test-internal",
+    "typecheck": "just typecheck-internal",
+    "dev": "just dev-internal",
+    "quality": "just quality",
+    "format": "just format",
     "format-check": "just format-check",
-    "ci":           "just ci",
-    "ci-full":      "just ci-full"
+    "ci": "just ci",
+    "ci-full": "just ci-full"
   }
 }
